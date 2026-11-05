@@ -1,188 +1,353 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors */
-  --color-carbon-ink: #1a211e;
-  --color-paper-white: #ffffff;
-  --color-true-black: #000000;
-  --color-obsidian: #0c0c0c;
-  --color-fog: #eef1f0;
-  --color-mist: #e0e0e0;
-  --color-graphite: #606562;
-  --color-ash-border: #cccfcd;
-  --color-slate: #363537;
-  --color-pewter: #4e4e4e;
-  --color-ember-red: #cc2e39;
+  /* ── Brand Palette ── */
+  --color-cream: #F3EDE4;
+  --color-sand: #E6DACB;
+  --color-espresso: #2A1810;
+  --color-umber: #4A2C1A;
+  --color-amber: #C8782A;
+  --color-glow: #FFB45E;
+  --color-gold: #D9B46C;
 
-  /* Typography — Font Families */
-  --font-geist: var(--font-geist-sans), 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-exposure-style-serif-exposure-10: var(--font-playfair), 'Exposure-style serif (Exposure-10)', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-exposure-10: var(--font-playfair), 'Exposure-10', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-bryant-style-condensed-sans-bryant: 'Bryant-style condensed sans (bryant)', 'Inter Display', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-geist-mono: var(--font-geist-mono), 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* ── Neutrals ── */
+  --color-ink: #1a1410;
+  --color-muted: #6b5f55;
+  --color-hairline: rgba(42, 24, 16, 0.10);
 
-  /* Font utility aliases */
-  --font-display: var(--font-exposure-style-serif-exposure-10);
-  --font-condensed: var(--font-bryant-style-condensed-sans-bryant);
+  /* ── Type Families ── */
+  --font-display: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Schibsted Grotesk', 'Inter', system-ui, sans-serif;
+  --font-schibsted: 'Schibsted Grotesk', sans-serif;
 
-  /* Typography — Scale */
-  --text-caption: 14px;
-  --text-caption--line-height: 1;
-  --text-caption--letter-spacing: 0px;
-
-  --text-button-label: 16px;
-  --text-button-label--line-height: 1.1;
-  --text-button-label--letter-spacing: 0.91px;
-
-  --text-heading-sm: 24px;
-  --text-heading-sm--line-height: 1.2;
-  --text-heading-sm--letter-spacing: 0.91px;
-
-  --text-heading: 32px;
-  --text-heading--line-height: 1.2;
-
-  --text-heading-lg: 48px;
-  --text-heading-lg--line-height: 1.1;
-  --text-heading-lg--letter-spacing: -1.2px;
-
-  --text-display: 80px;
-  --text-display--line-height: 1.1;
-  --text-display--letter-spacing: -2px;
-
-  /* Spacing */
-  --spacing-4: 4px;
-  --spacing-8: 8px;
-  --spacing-12: 12px;
-  --spacing-16: 16px;
-  --spacing-20: 20px;
-  --spacing-24: 24px;
-  --spacing-32: 32px;
-  --spacing-40: 40px;
-  --spacing-48: 48px;
-  --spacing-64: 64px;
-
-  /* Border Radius */
-  --radius-md: 4px;
-  --radius-lg: 8px;
-  --radius-3xl: 32px;
-  --radius-full: 9999px;
-
-  /* Component Named Radii */
-  --radius-nav: 4px;
-  --radius-cards: 8px;
-  --radius-badges: 9999px;
-  --radius-images: 8px;
-  --radius-inputs: 4px;
-  --radius-buttons: 4px;
-  --radius-buttonsrounded: 32px;
+  /* ── Border Radius ── */
+  --radius-card: 28px;
+  --radius-pill: 9999px;
+  --radius-hero: 32px;
 }
 
+/* ── Light System: driven on :root ── */
 :root {
-  /* Colors */
-  --color-carbon-ink: #1a211e;
-  --color-paper-white: #ffffff;
-  --color-true-black: #000000;
-  --color-obsidian: #0c0c0c;
-  --color-fog: #eef1f0;
-  --color-mist: #e0e0e0;
-  --color-graphite: #606562;
-  --color-ash-border: #cccfcd;
-  --color-slate: #363537;
-  --color-pewter: #4e4e4e;
-  --color-ember-red: #cc2e39;
+  --light: 0.08;
+  --warmth: 0.8;
 
-  /* Theme Defaults */
-  --background: var(--color-paper-white);
-  --foreground: var(--color-carbon-ink);
-  --gold: #C8A55A;
+  --hero-brightness: calc(0.4 + var(--light) * 0.65);
+  --hero-overlay: calc(0.65 - var(--light) * 0.35);
 
-  /* Typography — Font Families */
-  --font-geist: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-exposure-style-serif-exposure-10: 'Exposure-style serif (Exposure-10)', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-  --font-bryant-style-condensed-sans-bryant: 'Bryant-style condensed sans (bryant)', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-geist-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --font-exposure-10: 'Exposure-10', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-
-  /* Typography — Scale */
-  --text-caption: 14px;
-  --leading-caption: 1;
-  --tracking-caption: 0px;
-  --text-button-label: 16px;
-  --leading-button-label: 1.1;
-  --tracking-button-label: 0.91px;
-  --text-heading-sm: 24px;
-  --leading-heading-sm: 1.2;
-  --tracking-heading-sm: 0.91px;
-  --text-heading: 32px;
-  --leading-heading: 1.2;
-  --text-heading-lg: 48px;
-  --leading-heading-lg: 1.1;
-  --tracking-heading-lg: -1.2px;
-  --text-display: 80px;
-  --leading-display: 1.1;
-  --tracking-display: -2px;
-
-  /* Typography — Weights */
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-
-  /* Spacing */
-  --spacing-unit: 4px;
-  --spacing-4: 4px;
-  --spacing-8: 8px;
-  --spacing-12: 12px;
-  --spacing-16: 16px;
-  --spacing-20: 20px;
-  --spacing-24: 24px;
-  --spacing-32: 32px;
-  --spacing-40: 40px;
-  --spacing-48: 48px;
-  --spacing-64: 64px;
-
-  /* Layout */
-  --page-max-width: 1440px;
-  --section-gap: 80px;
-  --card-padding: 24px;
-  --element-gap: 24px;
-
-  /* Border Radius */
-  --radius-md: 4px;
-  --radius-lg: 8px;
-  --radius-3xl: 32px;
-  --radius-full: 9999px;
-
-  /* Named Radii */
-  --radius-nav: 4px;
-  --radius-cards: 8px;
-  --radius-badges: 9999px;
-  --radius-images: 8px;
-  --radius-inputs: 4px;
-  --radius-buttons: 4px;
-  --radius-buttonsrounded: 32px;
-
-  /* Surfaces */
-  --surface-canvas: #ffffff;
-  --surface-soft-card: #eef1f0;
-  --surface-hairline: #e0e0e0;
-  --surface-deep-panel: #0c0c0c;
+  --cream: #F3EDE4;
+  --sand: #E6DACB;
+  --espresso: #2A1810;
+  --umber: #4A2C1A;
+  --amber: #C8782A;
+  --glow: #FFB45E;
+  --gold: #D9B46C;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ── */
+html {
+  background-color: var(--cream);
+  color: var(--espresso);
+  font-family: 'Schibsted Grotesk', 'Inter', system-ui, sans-serif;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist, Arial, Helvetica, sans-serif);
+  background-color: var(--cream);
+  color: var(--espresso);
+  font-family: 'Schibsted Grotesk', 'Inter', system-ui, sans-serif;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow-x: hidden;
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+/* ── Film grain overlay ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
 }
+
+/* ── Typography: Display & Schibsted Grotesk ── */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 0.95;
+}
+
+.font-schibsted {
+  font-family: 'Schibsted Grotesk', sans-serif;
+  font-optical-sizing: auto;
+}
+
+
+  /* ── 3D Tactile Buttons (Top highlight + Bottom shadow + 3D click press) ── */
+  .btn-3d {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+    font-weight: 500;
+    border-radius: 9999px;
+    transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 0.12s cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter 0.12s ease;
+    will-change: transform, box-shadow;
+  }
+
+
+    .btn-3d:hover {
+      filter: brightness(1.03);
+    }
+
+      .btn-3d:active {
+        transform: translateY(2px) scale(0.985) !important;
+      }
+
+        /* 3D Dark (Espresso #2A1810) */
+        .btn-3d-dark {
+          background: linear-gradient(180deg, #372016 0%, #22120a 100%);
+          color: #F3EDE4;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          box-shadow:
+            inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.28),
+            inset 0 -2px 0 0 rgba(0, 0, 0, 0.55),
+            0 4px 12px -2px rgba(20, 10, 5, 0.35),
+            0 2px 4px 0 rgba(0, 0, 0, 0.2);
+        }
+
+          .btn-3d-dark:hover {
+            background: linear-gradient(180deg, #3f251a 0%, #28150c 100%);
+            box-shadow:
+              inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
+              inset 0 -2px 0 0 rgba(0, 0, 0, 0.55),
+              0 6px 16px -2px rgba(20, 10, 5, 0.45),
+              0 3px 6px 0 rgba(0, 0, 0, 0.25);
+          }
+
+          .btn-3d-dark:active {
+            background: linear-gradient(180deg, #22120a 0%, #1b0e08 100%);
+            box-shadow:
+              inset 0 2px 4px 0 rgba(0, 0, 0, 0.7),
+              0 1px 2px 0 rgba(0, 0, 0, 0.25) !important;
+          }
+
+          /* 3D White / Light */
+          .btn-3d-white {
+            background: linear-gradient(180deg, #ffffff 0%, #f6f1ea 100%);
+            color: #2A1810;
+            border: 1px solid rgba(42, 24, 16, 0.14);
+            box-shadow:
+              inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95),
+              inset 0 -2px 0 0 rgba(42, 24, 16, 0.15),
+              0 4px 12px -2px rgba(42, 24, 16, 0.18),
+              0 2px 4px 0 rgba(42, 24, 16, 0.1);
+          }
+
+          .btn-3d-white:hover {
+            background: linear-gradient(180deg, #ffffff 0%, #f9f5f0 100%);
+            box-shadow:
+              inset 0 1.5px 1px 0 rgba(255, 255, 255, 1),
+              inset 0 -2px 0 0 rgba(42, 24, 16, 0.15),
+              0 6px 16px -2px rgba(42, 24, 16, 0.22),
+              0 3px 6px 0 rgba(42, 24, 16, 0.12);
+          }
+
+          .btn-3d-white:active {
+            background: linear-gradient(180deg, #eee8df 0%, #f4ede3 100%);
+            box-shadow:
+              inset 0 2px 3px 0 rgba(42, 24, 16, 0.25),
+              0 1px 2px 0 rgba(42, 24, 16, 0.1) !important;
+          }
+
+          /* 3D Amber Accent (#C8782A) */
+          .btn-3d-amber {
+            background: linear-gradient(180deg, #d88736 0%, #b86a1e 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow:
+              inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.45),
+              inset 0 -2px 0 0 rgba(0, 0, 0, 0.35),
+              0 5px 14px -2px rgba(200, 120, 42, 0.4),
+              0 2px 4px 0 rgba(0, 0, 0, 0.15);
+          }
+
+          .btn-3d-amber:hover {
+            background: linear-gradient(180deg, #e2903d 0%, #c17122 100%);
+            box-shadow:
+              inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.55),
+              inset 0 -2px 0 0 rgba(0, 0, 0, 0.35),
+              0 7px 18px -2px rgba(200, 120, 42, 0.5),
+              0 3px 6px 0 rgba(0, 0, 0, 0.2);
+          }
+
+          .btn-3d-amber:active {
+            background: linear-gradient(180deg, #a85f18 0%, #945314 100%);
+            box-shadow:
+              inset 0 2px 4px 0 rgba(0, 0, 0, 0.5),
+              0 1px 2px 0 rgba(0, 0, 0, 0.2) !important;
+          }
+
+          /* 3D Glass / Translucent (for hero overlay) */
+          .btn-3d-glass {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.08) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            box-shadow:
+              inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.4),
+              inset 0 -1.5px 0 0 rgba(0, 0, 0, 0.25),
+              0 4px 12px -2px rgba(0, 0, 0, 0.25);
+          }
+
+          .btn-3d-glass:hover {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.14) 100%);
+            box-shadow:
+              inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.55),
+              inset 0 -1.5px 0 0 rgba(0, 0, 0, 0.25),
+              0 6px 16px -2px rgba(0, 0, 0, 0.35);
+          }
+
+          .btn-3d-glass:active {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+            box-shadow:
+              inset 0 2px 4px 0 rgba(0, 0, 0, 0.4),
+              0 1px 2px 0 rgba(0, 0, 0, 0.15) !important;
+          }
+
+          /* 3D Outline */
+          .btn-3d-outline {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(230, 218, 203, 0.4) 100%);
+            color: #2A1810;
+            border: 1px solid rgba(42, 24, 16, 0.18);
+            box-shadow:
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.7),
+              inset 0 -1.5px 0 0 rgba(42, 24, 16, 0.1),
+              0 2px 6px -1px rgba(42, 24, 16, 0.08);
+          }
+
+
+            .btn-3d-outline:hover {
+              border-color: rgba(42, 24, 16, 0.4);
+              background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(230, 218, 203, 0.6) 100%);
+            }
+
+            .btn-3d-outline:active {
+              transform: translateY(1.5px) scale(0.985) !important;
+              box-shadow:
+                inset 0 1.5px 2px 0 rgba(42, 24, 16, 0.2),
+                0 1px 1px 0 rgba(42, 24, 16, 0.05) !important;
+            }
+
+            /* ── Card image mask ── */
+            .card-img-mask {
+              border-radius: 28px;
+              overflow: hidden;
+              position: relative;
+            }
+
+            .card-img-mask::after {
+              content: '';
+              position: absolute;
+              inset: 0;
+              background: rgba(200, 120, 42, 0.07);
+              pointer-events: none;
+              border-radius: inherit;
+            }
+
+            /* ── Hairline border ── */
+            .border-hairline {
+              border: 1px solid rgba(42, 24, 16, 0.10);
+            }
+
+            /* ── Section gap ── */
+            .section-gap {
+              padding-top: clamp(80px, 9vw, 130px);
+              padding-bottom: clamp(80px, 9vw, 130px);
+            }
+
+            /* ── Scroll cue pulse ── */
+            @keyframes scrollCue {
+
+              0%,
+              100% {
+                transform: translateY(0);
+                opacity: 0.6;
+              }
+
+              50% {
+                transform: translateY(6px);
+                opacity: 1;
+              }
+            }
+
+            .scroll-cue {
+              animation: scrollCue 2s ease-in-out infinite;
+            }
+
+            /* ── Counter number ── */
+            .stat-number {
+              font-family: var(--font-display);
+              font-size: clamp(2.5rem, 5.5vw, 4.2rem);
+              font-weight: 400;
+              letter-spacing: -0.03em;
+              line-height: 1;
+              color: var(--espresso);
+            }
+
+            /* Custom cord spring animation */
+            @keyframes springBounce {
+              0% {
+                transform: translateY(0);
+              }
+
+              35% {
+                transform: translateY(22px);
+              }
+
+              60% {
+                transform: translateY(-10px);
+              }
+
+              80% {
+                transform: translateY(4px);
+              }
+
+              100% {
+                transform: translateY(0);
+              }
+            }
+
+
+            .animate-spring {
+              animation: springBounce 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+
+
+            /* ── Reduced motion ── */
+            @media (prefers-reduced-motion: reduce) {
+
+              *,
+              *::before,
+              *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+              }
+
+              .scroll-cue {
+                animation: none;
+              }
+            }
