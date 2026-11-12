@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAllProducts, addProduct, deleteProduct } from "@/lib/products-store";
+import { getAllProducts, addProduct, updateProduct, deleteProduct } from "@/lib/products-store";
 
 export async function GET(request: Request) {
   try {
@@ -48,6 +48,35 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { success: false, error: "Failed to create product" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const id = body.id;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Product ID is required for update" },
+        { status: 400 }
+      );
+    }
+
+    const updated = updateProduct(id, body);
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: "Failed to update product" },
       { status: 500 }
     );
   }

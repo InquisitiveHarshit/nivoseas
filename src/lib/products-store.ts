@@ -86,6 +86,34 @@ export function addProduct(newProductData: Omit<Product, "id" | "slug"> & { id?:
   return fullProduct;
 }
 
+export function updateProduct(id: string, updates: Partial<Product>): Product | null {
+  const products = getAllProducts();
+  const index = products.findIndex((p) => p.id === id || p.slug === id);
+  if (index === -1) return null;
+
+  const existing = products[index];
+  const updatedProduct: Product = {
+    ...existing,
+    ...updates,
+    id: existing.id, // preserve immutable ID
+    slug: updates.slug || (updates.name && updates.name !== existing.name
+      ? updates.name.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "")
+      : existing.slug),
+    images: updates.images && updates.images.length > 0 ? updates.images : existing.images,
+  };
+
+  products[index] = updatedProduct;
+  memoryStore = [...products];
+
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(memoryStore, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("Could not write products.json after update:", err);
+  }
+
+  return updatedProduct;
+}
+
 export function deleteProduct(idOrSlug: string): boolean {
   const products = getAllProducts();
   const filtered = products.filter((p) => p.id !== idOrSlug && p.slug !== idOrSlug);

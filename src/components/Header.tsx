@@ -85,11 +85,10 @@ export default function Header() {
     <>
       {/* ── Sticky Rounded Header Island ── */}
       <header
-        className={`fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2.5rem)] max-w-7xl transition-all duration-300 rounded-[20px] sm:rounded-[24px] ${
-          isScrolled || activeDropdown
+        className={`fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2.5rem)] max-w-7xl transition-all duration-300 rounded-[20px] sm:rounded-[24px] ${isScrolled || activeDropdown
             ? "bg-[#F3EDE4]/95 backdrop-blur-md shadow-xl shadow-[#2A1810]/10 border border-[#2A1810]/10"
             : "bg-[#F3EDE4] shadow-md shadow-[#2A1810]/8 border border-[#2A1810]/8"
-        }`}
+          }`}
       >
         <div className="px-4 sm:px-7 py-2.5 sm:py-3">
           <div className="flex items-center justify-between">
@@ -152,11 +151,10 @@ export default function Header() {
                     <FiChevronDown className="text-xs" />
                   )}
                   <div
-                    className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[2px] bg-[#C8782A] transition-transform duration-200 ${
-                      activeDropdown === "products"
+                    className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[2px] bg-[#C8782A] transition-transform duration-200 ${activeDropdown === "products"
                         ? "scale-x-100"
                         : "scale-x-0 group-hover:scale-x-100"
-                    }`}
+                      }`}
                   ></div>
                 </button>
 
@@ -180,11 +178,10 @@ export default function Header() {
                               <li key={key}>
                                 <button
                                   type="button"
-                                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all duration-200 cursor-pointer flex items-center justify-between ${
-                                    activeProductCategory === key
+                                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all duration-200 cursor-pointer flex items-center justify-between ${activeProductCategory === key
                                       ? "bg-[#F3EDE4] text-[#C8782A] font-semibold border border-[#C8782A] shadow-xs"
                                       : "text-[#2A1810] hover:bg-white hover:shadow-xs font-medium border border-transparent"
-                                  }`}
+                                    }`}
                                   onMouseEnter={() => setActiveProductCategory(key)}
                                   onClick={() => {
                                     router.push("/products");
@@ -199,18 +196,6 @@ export default function Header() {
                               </li>
                             ))}
                           </ul>
-
-                          {/* Quick Admin link in sidebar */}
-                          <div className="mt-6 pt-3 border-t border-[#2A1810]/8 px-3">
-                            <Link
-                              href="/admin"
-                              onClick={() => setActiveDropdown(null)}
-                              className="text-[11px] text-[#4A2C1A]/70 hover:text-[#C8782A] font-medium flex items-center gap-1.5"
-                            >
-                              <span>+</span>
-                              <span>Add New Product (Admin)</span>
-                            </Link>
-                          </div>
                         </div>
                       </div>
 
@@ -307,14 +292,6 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/admin"
-                className="relative group text-[#2A1810] hover:text-[#C8782A] text-[14px] font-medium py-2"
-              >
-                <span>Admin</span>
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[2px] bg-[#C8782A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></div>
-              </Link>
-
-              <Link
                 href="/#contact"
                 className="relative group text-[#2A1810] hover:text-[#C8782A] text-[14px] font-medium py-2"
               >
@@ -324,12 +301,13 @@ export default function Header() {
             </nav>
 
             {/* ── Helpline / WhatsApp Button (Right) ── */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2.5 sm:space-x-3">
               <button
                 onClick={openWhatsApp}
-                className="btn-3d btn-3d-dark px-4 py-2 rounded-full flex items-center space-x-2 text-xs font-medium cursor-pointer"
+                aria-label="Contact Helpline via WhatsApp"
+                className="btn-3d btn-3d-dark w-7 h-7 sm:w-auto sm:h-auto sm:px-3.5 sm:py-1.5 rounded-full flex items-center justify-center sm:space-x-2 text-xs font-medium cursor-pointer shrink-0"
               >
-                <FiPhone className="text-sm" />
+                <FiPhone className="text-[11px] sm:text-xs" />
                 <span className="hidden sm:inline">Helpline</span>
               </button>
 
@@ -410,14 +388,6 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 About Us
-              </Link>
-
-              <Link
-                href="/admin"
-                className="block py-2 text-[#2A1810] text-base font-bold border-b border-[#2A1810]/8"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Admin Portal
               </Link>
 
               <Link
