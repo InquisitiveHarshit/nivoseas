@@ -9,7 +9,7 @@ export default function Hero() {
         height: "min(94vh, 900px)",
       }}
     >
-      {/* ── Banner Image (Responsive: Mobile vs Desktop) ── */}
+      {/* ── Banner Image (Responsive: Mobile vs Desktop) with Enhanced Luminance ── */}
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <picture className="w-full h-full">
           <source media="(max-width: 767px)" srcSet="/mobilebanner.webp" />
@@ -17,23 +17,32 @@ export default function Hero() {
           <img
             src="/bannerbg.webp"
             alt="Nivoseas Lighting — Sector 104, Noida"
-            className="w-full h-full object-cover object-center sm:object-[50%_35%]"
+            className="w-full h-full object-cover object-center sm:object-[50%_35%] brightness-[1.12] contrast-[1.05] saturate-[1.10]"
           />
         </picture>
       </div>
 
-      {/* ── Subtle dark vignette for text legibility ── */}
+      {/* ── Luminous Ambient Light Glow (Warm golden architectural radiance) ── */}
+      <div
+        className="absolute inset-0 pointer-events-none mix-blend-screen"
+        style={{
+          background:
+            "radial-gradient(ellipse 65% 55% at 62% 25%, rgba(255, 215, 140, 0.35) 0%, rgba(217, 180, 108, 0.16) 45%, transparent 75%)",
+        }}
+      />
+
+      {/* ── Soft Text Legibility Scrim (Light, airy, preserving chandelier illumination) ── */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(to top, rgba(8,6,4,0.85) 0%, rgba(8,6,4,0.38) 45%, rgba(8,6,4,0.12) 80%, rgba(8,6,4,0.22) 100%)",
+            "radial-gradient(circle at 18% 85%, rgba(12,8,5,0.68) 0%, rgba(12,8,5,0.32) 48%, transparent 78%), linear-gradient(to top, rgba(12,8,5,0.48) 0%, rgba(12,8,5,0.08) 42%, transparent 75%)",
         }}
       />
 
       {/* ── Hero Content — clean original typography, perfectly positioned ── */}
       <div className="relative z-20 h-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex flex-col justify-end pt-28 pb-14 sm:pb-20 lg:pb-24">
-        <div className="max-w-[560px]">
+        <div className="max-w-[560px] drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
           {/* Eyebrow */}
           <p className="text-[12px] sm:text-[13px] font-normal tracking-[0.14em] uppercase text-white/70 mb-3">
             Nivoseas Lighting — Sector 104, Noida

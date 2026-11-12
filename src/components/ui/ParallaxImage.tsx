@@ -6,6 +6,7 @@ interface ParallaxImageProps {
   src: string;
   alt: string;
   className?: string;
+  imgClassName?: string;
   aspectRatio?: string;
   speed?: number; // parallax travel intensity, e.g. 24px
   scale?: number;
@@ -15,6 +16,7 @@ export default function ParallaxImage({
   src,
   alt,
   className = "",
+  imgClassName = "",
   aspectRatio = "1/1",
   speed = 28,
   scale = 1.14,
@@ -68,7 +70,7 @@ export default function ParallaxImage({
         src={src}
         alt={alt}
         loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover will-change-transform transition-transform duration-300 ease-out group-hover:scale-[1.05]"
+        className={`absolute inset-0 w-full h-full object-cover will-change-transform transition-transform duration-300 ease-out group-hover:scale-[1.05] ${imgClassName}`}
         style={{
           transform: `scale(${scale}) translate3d(0, ${offsetY}px, 0)`,
         }}

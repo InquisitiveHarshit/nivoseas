@@ -67,28 +67,29 @@ export default function Intro() {
               href="#catalogue"
               className="btn-3d btn-3d-dark px-6 py-3 text-[13.5px] gap-3"
             >
-                <span>View All Products</span>
-                <span className="w-6 h-6 rounded-full bg-[#F3EDE4] shadow-inner flex items-center justify-center text-[#2A1810] shrink-0">
-                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true">
-                    <path d="M2 10 L10 2 M4 2 L10 2 L10 8" />
-                  </svg>
-                </span>
+              <span>View All Products</span>
+              <span className="w-6 h-6 rounded-full bg-[#F3EDE4] shadow-inner flex items-center justify-center text-[#2A1810] shrink-0">
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true">
+                  <path d="M2 10 L10 2 M4 2 L10 2 L10 8" />
+                </svg>
+              </span>
             </Link>
           </div>
 
           {/* Right — image with smooth parallax */}
           <div
             data-reveal
-            className="card-img-mask h-[340px] sm:h-[420px] lg:h-[480px] shadow-2xl shadow-[#2A1810]/15"
+            className="card-img-mask h-[420px] sm:h-[520px] lg:h-[580px] shadow-2xl shadow-[#2A1810]/15"
             style={{ opacity: 0, transform: "translateY(32px)", transition: "opacity 0.9s ease 0.15s, transform 0.9s ease 0.15s" }}
           >
             <ParallaxImage
-              src="/Minimalist Luxury Chandelier Interior.webp"
-              alt="Nivoseas modern luxury interior with chandelier"
+              src="/about-us-image.webp"
+              alt="Nivoseas craftsmanship, lighting experience and luxury interiors"
               aspectRatio="auto"
               className="w-full h-full"
-              speed={34}
-              scale={1.16}
+              imgClassName="object-top sm:object-[center_8%]"
+              speed={14}
+              scale={1.04}
             />
           </div>
         </div>

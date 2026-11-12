@@ -126,6 +126,30 @@ export default function AdminPage() {
   const [moq, setMoq] = useState("1");
   const [submitting, setSubmitting] = useState(false);
 
+  // Real-time live SKU validation BEFORE publish
+  const skuValidation = useMemo(() => {
+    const trimmed = sku.trim().toUpperCase();
+    if (!trimmed) {
+      return { status: "empty" as const, text: "SKU / Model Number is required." };
+    }
+    const dup = products.find(
+      (p) =>
+        (editingId ? p.id !== editingId && (p.sku || p.id).toUpperCase() !== (editingId || "").toUpperCase() : true) &&
+        (((p.sku || p.id) && (p.sku || p.id).toUpperCase() === trimmed))
+    );
+    if (dup) {
+      return {
+        status: "duplicate" as const,
+        text: `SKU already exists on "${dup.name}". Please provide a unique SKU.`,
+        productName: dup.name,
+      };
+    }
+    return {
+      status: "ok" as const,
+      text: `SKU "${trimmed}" is unique & ready for publish.`,
+    };
+  }, [sku, products, editingId]);
+
   // View toggles: Live Preview hidden until requested, Specs table collapsible
   const [showLivePreview, setShowLivePreview] = useState(false);
   const [isSpecsDropdownOpen, setIsSpecsDropdownOpen] = useState(false);
@@ -676,264 +700,334 @@ export default function AdminPage() {
             </div>
 
             {/* KPI Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                  <div className="bg-white rounded-2xl p-4 border border-[#2A1810]/10 shadow-sm col-span-2 sm:col-span-4 lg:col-span-1">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              <div className="bg-white rounded-2xl p-4 border border-[#2A1810]/10 shadow-sm col-span-2 sm:col-span-4 lg:col-span-1">
+                <div className="flex items-center justify-between text-xs text-[#4A2C1A]/70 mb-2">
+                  <span>All Fixtures</span>
+                  <FiLayers className="text-[#C8782A]" />
+                </div>
+                <div className="font-display text-3xl font-normal text-[#2A1810]">{stats.total}</div>
+                <div className="text-[11px] text-emerald-600 font-medium mt-2 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Live
+                </div>
+              </div>
+
+              {CATEGORIES.map((cat) => {
+                const count = (() => {
+                  switch (cat.id) {
+                    case "decorative": return stats.decorative;
+                    case "indoor-lighting": return stats.indoor;
+                    case "outdoor-gate": return stats.outdoor;
+                    case "commercial": return stats.commercial;
+                    case "architectural-led": return stats.architectural;
+                    case "led-fans": return stats.fans;
+                    case "brands": return stats.brands;
+                    default: return 0;
+                  }
+                })();
+                return (
+                  <div key={cat.id} className="bg-white rounded-2xl p-4 border border-[#2A1810]/10 shadow-sm">
                     <div className="flex items-center justify-between text-xs text-[#4A2C1A]/70 mb-2">
-                      <span>All Fixtures</span>
-                      <FiLayers className="text-[#C8782A]" />
+                      <span className="line-clamp-1">{cat.name}</span>
+                      <span className="text-base">{cat.icon}</span>
                     </div>
-                    <div className="font-display text-3xl font-normal text-[#2A1810]">{stats.total}</div>
-                      <div className="text-[11px] text-emerald-600 font-medium mt-2 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Live
-                      </div>
-                    </div>
-
-                    {CATEGORIES.map((cat) => {
-                      const count = (() => {
-                        switch (cat.id) {
-                          case "decorative": return stats.decorative;
-                          case "indoor-lighting": return stats.indoor;
-                          case "outdoor-gate": return stats.outdoor;
-                          case "commercial": return stats.commercial;
-                          case "architectural-led": return stats.architectural;
-                          case "led-fans": return stats.fans;
-                          case "brands": return stats.brands;
-                          default: return 0;
-                        }
-                      })();
-                      return (
-                        <div key={cat.id} className="bg-white rounded-2xl p-4 border border-[#2A1810]/10 shadow-sm">
-                          <div className="flex items-center justify-between text-xs text-[#4A2C1A]/70 mb-2">
-                            <span className="line-clamp-1">{cat.name}</span>
-                            <span className="text-base">{cat.icon}</span>
-                          </div>
-                          <div className="font-display text-2xl font-normal text-[#2A1810]">{count}</div>
-                          <div className="text-[10px] text-[#4A2C1A]/60 mt-2 line-clamp-1">{cat.countHint}</div>
-                        </div>
-                      );
-                    })}
+                    <div className="font-display text-2xl font-normal text-[#2A1810]">{count}</div>
+                    <div className="text-[10px] text-[#4A2C1A]/60 mt-2 line-clamp-1">{cat.countHint}</div>
                   </div>
+                );
+              })}
+            </div>
 
-                  {/* Recent Luminaires */}
-                  <div className="bg-white rounded-3xl p-6 lg:p-8 border border-[#2A1810]/10 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="font-display text-xl text-[#2A1810]">Recently Updated Luminaires</h3>
-                        <p className="text-xs text-[#4A2C1A]/70 mt-0.5">Live products with WhatsApp inquiry integration.</p>
-                      </div>
+            {/* Recent Luminaires */}
+            <div className="bg-white rounded-3xl p-6 lg:p-8 border border-[#2A1810]/10 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="font-display text-xl text-[#2A1810]">Recently Updated Luminaires</h3>
+                  <p className="text-xs text-[#4A2C1A]/70 mt-0.5">Live products with WhatsApp inquiry integration.</p>
+                </div>
+                <button
+                  onClick={() => setActiveView("inventory")}
+                  className="text-xs font-semibold text-[#C8782A] hover:underline inline-flex items-center gap-1"
+                >
+                  <span>See all {stats.total} SKUs</span>
+                  <FiArrowRight className="text-xs" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {products.slice(0, 4).map((p) => (
+                  <div key={p.id} className="p-3.5 rounded-2xl border border-[#2A1810]/8 hover:border-[#C8782A] transition-all bg-[#F6F2EC]/30 flex flex-col justify-between group">
+                    <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white mb-3 relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[10px] px-1.5 py-0.5 rounded">
+                        {p.images.length} photos
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#C8782A]">{p.subcategory || p.category}</span>
+                      <h4 className="font-display text-sm font-semibold text-[#2A1810] line-clamp-1 mt-0.5">{p.name}</h4>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-[#2A1810]/5 flex items-center justify-between text-xs">
                       <button
-                        onClick={() => setActiveView("inventory")}
-                        className="text-xs font-semibold text-[#C8782A] hover:underline inline-flex items-center gap-1"
+                        onClick={() => startEditing(p)}
+                        className="text-[#C8782A] font-medium hover:underline flex items-center gap-1"
                       >
-                        <span>See all {stats.total} SKUs</span>
-                        <FiArrowRight className="text-xs" />
+                        <FiEdit2 className="text-xs" /> Edit
+                      </button>
+                      <button onClick={() => handleDeleteProduct(p.id, p.name)} className="text-red-500 hover:text-red-700">
+                        Delete
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {products.slice(0, 4).map((p) => (
-                        <div key={p.id} className="p-3.5 rounded-2xl border border-[#2A1810]/8 hover:border-[#C8782A] transition-all bg-[#F6F2EC]/30 flex flex-col justify-between group">
-                          <div className="aspect-[4/3] rounded-xl overflow-hidden bg-white mb-3 relative">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={p.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                            <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-xs text-white text-[10px] px-1.5 py-0.5 rounded">
-                              {p.images.length} photos
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#C8782A]">{p.subcategory || p.category}</span>
-                            <h4 className="font-display text-sm font-semibold text-[#2A1810] line-clamp-1 mt-0.5">{p.name}</h4>
-                          </div>
-                          <div className="mt-3 pt-2 border-t border-[#2A1810]/5 flex items-center justify-between text-xs">
-                            <button
-                              onClick={() => startEditing(p)}
-                              className="text-[#C8782A] font-medium hover:underline flex items-center gap-1"
+        {/* View: Inventory */}
+        {activeView === "inventory" && (
+          <div className="p-6 lg:p-10 space-y-6 max-w-7xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">Catalogue Inventory</h1>
+                <p className="text-xs text-[#4A2C1A]/70 mt-0.5">Manage active fixtures, technical specifications, and galleries.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setName("");
+                  setTagline("");
+                  setDescription("");
+                  setFeaturesText("");
+                  setGalleryImages(DEFAULT_IMAGES);
+                  setActiveView("add");
+                }}
+                className="btn-3d btn-3d-dark text-xs px-4 py-2.5 rounded-full flex items-center gap-2"
+              >
+                <FiPlusCircle className="text-sm" />
+                <span>Add Luminaire</span>
+              </button>
+            </div>
+
+            {/* Filter Bar */}
+                <div className="bg-white p-4 rounded-2xl border border-[#2A1810]/10 shadow-xs space-y-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    {/* Search Input */}
+                    <div className="relative flex-1 max-w-lg">
+                      <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2A1810]/40 text-sm" />
+                      <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search by fixture name, SKU, wattage, or material..."
+                        className="w-full pl-9 pr-8 py-2 bg-[#F6F2EC]/60 border border-[#2A1810]/12 rounded-xl text-xs text-[#2A1810] placeholder-[#2A1810]/40 focus:outline-none focus:border-[#C8782A] focus:bg-white transition-all"
+                      />
+                      {search && (
+                        <button
+                          type="button"
+                          onClick={() => setSearch("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#2A1810]/40 hover:text-[#2A1810] text-xs p-1 cursor-pointer"
+                          title="Clear search"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Category Dropdown (Compact & Clean) */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <label className="text-[11px] font-semibold text-[#4A2C1A]/70 uppercase tracking-wider">
+                        Category:
+                      </label>
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="px-3.5 py-2 bg-[#F6F2EC]/80 border border-[#2A1810]/15 rounded-xl text-xs font-semibold text-[#2A1810] focus:outline-none focus:border-[#C8782A] cursor-pointer"
+                      >
+                        <option value="all">All Categories ({products.length})</option>
+                        {CATEGORIES.map((cat) => {
+                          const count = products.filter((p) => p.category === cat.id).length;
+                          return (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.icon} {cat.name} ({count})
+                            </option>
+                          );
+                        })}
+                      </select>
+
+                      <span className="text-[11px] font-mono text-[#4A2C1A]/60 bg-[#F6F2EC] px-2.5 py-1.5 rounded-lg border border-[#2A1810]/8 hidden sm:inline-block">
+                        {filteredProducts.length} fixture(s)
+                      </span>
+                    </div>
+                  </div>
+
+                    {/* Horizontal Pills row with proper spacing, icons & count badges */}
+                    <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-0.5 border-t border-[#2A1810]/6">
+                      <button
+                        type="button"
+                        onClick={() => setCategoryFilter("all")}
+                        className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-medium cursor-pointer flex items-center gap-1.5 shrink-0 ${categoryFilter === "all"
+                            ? "bg-[#2A1810] text-[#F3EDE4] shadow-xs"
+                            : "bg-[#F6F2EC] text-[#4A2C1A] hover:bg-[#2A1810]/10 border border-[#2A1810]/8"
+                          }`}
+                      >
+                        <span>All Fixtures</span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${categoryFilter === "all"
+                              ? "bg-white/20 text-white"
+                              : "bg-[#2A1810]/10 text-[#4A2C1A]"
+                            }`}
+                        >
+                          {products.length}
+                        </span>
+                      </button>
+
+                      {CATEGORIES.map((cat) => {
+                        const count = products.filter((p) => p.category === cat.id).length;
+                        const isSelected = categoryFilter === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setCategoryFilter(cat.id)}
+                            className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-medium cursor-pointer flex items-center gap-1.5 shrink-0 ${isSelected
+                                ? "bg-[#C8782A] text-white shadow-xs shadow-[#C8782A]/20"
+                                : "bg-[#F6F2EC] text-[#4A2C1A] hover:bg-[#2A1810]/10 border border-[#2A1810]/8"
+                              }`}
+                          >
+                            <span>{cat.icon}</span>
+                            <span>{cat.name}</span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected
+                                  ? "bg-white/25 text-white"
+                                  : "bg-[#2A1810]/10 text-[#4A2C1A]"
+                                }`}
                             >
-                              <FiEdit2 className="text-xs" /> Edit
-                            </button>
-                            <button onClick={() => handleDeleteProduct(p.id, p.name)} className="text-red-500 hover:text-red-700">
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Inventory Table */}
+                  <div className="bg-white rounded-3xl border border-[#2A1810]/10 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-[#2A1810]/5 border-b border-[#2A1810]/10 text-[#4A2C1A]/80 uppercase tracking-wider text-[10px] font-semibold">
+                            <th className="py-3.5 px-5">Fixture</th>
+                            <th className="py-3.5 px-4">SKU</th>
+                            <th className="py-3.5 px-4">Category</th>
+                            <th className="py-3.5 px-4">Gallery</th>
+                            <th className="py-3.5 px-4">Specifications</th>
+                            <th className="py-3.5 px-4">Environment</th>
+                            <th className="py-3.5 px-5 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#2A1810]/5">
+                          {filteredProducts.map((p) => (
+                            <tr key={p.id} className="hover:bg-[#F6F2EC]/40 transition-colors group cursor-pointer" onClick={() => setSelectedProduct(p)}>
+                              <td className="py-3.5 px-5">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#2A1810]/5 shrink-0 border border-[#2A1810]/8">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={p.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={p.name} className="w-full h-full object-cover" />
+                                  </div>
+                                  <div>
+                                    <div className="font-semibold text-[#2A1810] group-hover:text-[#C8782A] line-clamp-1">{p.name}</div>
+                                    <div className="text-[10px] text-[#4A2C1A]/60 font-mono">ID: {p.id}</div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* ── Inline SKU Cell ── */}
+                              <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                                {inlineSkuEdit?.id === p.id ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      autoFocus
+                                      type="text"
+                                      value={inlineSkuEdit.value}
+                                      onChange={(e) => setInlineSkuEdit({ id: p.id, value: e.target.value.toUpperCase() })}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleInlineSkuSave(p.id);
+                                        if (e.key === "Escape") setInlineSkuEdit(null);
+                                      }}
+                                      className="w-28 px-2 py-1 border border-[#C8782A] rounded-lg text-[11px] font-mono font-bold text-[#2A1810] focus:outline-none bg-white"
+                                    />
+                                    <button
+                                      onClick={() => handleInlineSkuSave(p.id)}
+                                      className="text-emerald-600 hover:text-emerald-800 text-[11px] font-semibold"
+                                      title="Save"
+                                    >✓</button>
+                                    <button
+                                      onClick={() => setInlineSkuEdit(null)}
+                                      className="text-[#4A2C1A]/50 hover:text-red-500 text-[11px]"
+                                      title="Cancel"
+                                    >✕</button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setInlineSkuEdit({ id: p.id, value: p.sku || p.id })}
+                                    className="group/sku flex items-center gap-1.5 cursor-pointer"
+                                    title="Click to edit SKU"
+                                  >
+                                    <span className="px-2 py-0.5 rounded-md bg-[#2A1810]/5 text-[#2A1810] font-mono font-bold text-[11px] border border-transparent group-hover/sku:border-[#C8782A]/40 group-hover/sku:bg-[#C8782A]/5 transition-all">
+                                      {p.sku || p.id}
+                                    </span>
+                                    <FiEdit2 className="text-[10px] text-[#2A1810]/30 group-hover/sku:text-[#C8782A] transition-colors" />
+                                  </button>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <span className="px-2.5 py-1 rounded-full bg-[#2A1810]/5 text-[#2A1810] font-medium text-[11px] capitalize">
+                                  {p.subcategory || p.category.replace("-", " ")}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <span className="px-2 py-0.5 rounded-full bg-[#C8782A]/10 text-[#C8782A] font-semibold text-[11px]">
+                                  {p.images?.length || 1} photo(s)
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <div className="font-mono text-[#C8782A] font-bold text-[11px]">{p.wattage}</div>
+                                <div className="text-[#4A2C1A]/70 text-[11px] line-clamp-1">{p.material}</div>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-emerald-100 text-emerald-800">
+                                  {p.usage || "Indoor"}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => startEditing(p)}
+                                    title="Edit product specifications & gallery"
+                                    className="px-2.5 py-1 rounded-lg bg-[#C8782A]/10 text-[#C8782A] hover:bg-[#C8782A] hover:text-white transition-colors flex items-center gap-1 font-medium text-[11px]"
+                                  >
+                                    <FiEdit2 className="text-xs" /> Edit
+                                  </button>
+                                  <Link href={`/ products / ${p.slug} `} target="_blank" className="p-1.5 rounded-lg text-[#4A2C1A]/70 hover:text-[#2A1810]" title="View live page">
+                                    <FiExternalLink className="text-sm" />
+                                  </Link>
+                                  <button onClick={() => handleDeleteProduct(p.id, p.name)} className="p-1.5 rounded-lg text-red-500 hover:text-red-700" title="Delete">
+                                    <FiTrash2 className="text-sm" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 </div>
-        )}
-
-                {/* View: Inventory */}
-                {activeView === "inventory" && (
-                  <div className="p-6 lg:p-10 space-y-6 max-w-7xl">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">Catalogue Inventory</h1>
-                        <p className="text-xs text-[#4A2C1A]/70 mt-0.5">Manage active fixtures, technical specifications, and galleries.</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setEditingId(null);
-                          setName("");
-                          setTagline("");
-                          setDescription("");
-                          setFeaturesText("");
-                          setGalleryImages(DEFAULT_IMAGES);
-                          setActiveView("add");
-                        }}
-                        className="btn-3d btn-3d-dark text-xs px-4 py-2.5 rounded-full flex items-center gap-2"
-                      >
-                        <FiPlusCircle className="text-sm" />
-                        <span>Add Luminaire</span>
-                      </button>
-                    </div>
-
-                    {/* Filter Bar */}
-                    <div className="bg-white p-4 rounded-2xl border border-[#2A1810]/10 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                      <div className="relative flex-1 max-w-md">
-                        <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2A1810]/40 text-sm" />
-                        <input
-                          type="text"
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                          placeholder="Search fixtures by name, wattage, or material..."
-                          className="w-full pl-9 pr-4 py-2 bg-[#F6F2EC]/60 border border-[#2A1810]/10 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-1.5 overflow-x-auto">
-                        <button
-                          onClick={() => setCategoryFilter("all")}
-                          className={`text - xs px - 3 py - 1.5 rounded - lg whitespace - nowrap transition - colors ${categoryFilter === "all" ? "bg-[#2A1810] text-[#F3EDE4] font-medium" : "bg-[#2A1810]/5 text-[#4A2C1A]"} `}
-                        >
-                          All ({products.length})
-                        </button>
-                        {CATEGORIES.map((cat) => (
-                          <button
-                            key={cat.id}
-                            onClick={() => setCategoryFilter(cat.id)}
-                            className={`text - xs px - 3 py - 1.5 rounded - lg whitespace - nowrap transition - colors ${categoryFilter === cat.id ? "bg-[#2A1810] text-[#F3EDE4] font-medium" : "bg-[#2A1810]/5 text-[#4A2C1A]"} `}
-                          >
-                            {cat.icon} {cat.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Inventory Table */}
-                    <div className="bg-white rounded-3xl border border-[#2A1810]/10 shadow-sm overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse text-xs">
-                          <thead>
-                            <tr className="bg-[#2A1810]/5 border-b border-[#2A1810]/10 text-[#4A2C1A]/80 uppercase tracking-wider text-[10px] font-semibold">
-                              <th className="py-3.5 px-5">Fixture</th>
-                              <th className="py-3.5 px-4">SKU</th>
-                              <th className="py-3.5 px-4">Category</th>
-                              <th className="py-3.5 px-4">Gallery</th>
-                              <th className="py-3.5 px-4">Specifications</th>
-                              <th className="py-3.5 px-4">Environment</th>
-                              <th className="py-3.5 px-5 text-right">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#2A1810]/5">
-                            {filteredProducts.map((p) => (
-                              <tr key={p.id} className="hover:bg-[#F6F2EC]/40 transition-colors group cursor-pointer" onClick={() => setSelectedProduct(p)}>
-                                <td className="py-3.5 px-5">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#2A1810]/5 shrink-0 border border-[#2A1810]/8">
-                                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                                      <img src={p.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={p.name} className="w-full h-full object-cover" />
-                                    </div>
-                                    <div>
-                                      <div className="font-semibold text-[#2A1810] group-hover:text-[#C8782A] line-clamp-1">{p.name}</div>
-                                      <div className="text-[10px] text-[#4A2C1A]/60 font-mono">ID: {p.id}</div>
-                                    </div>
-                                  </div>
-                                </td>
-
-                                {/* ── Inline SKU Cell ── */}
-                                <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                                  {inlineSkuEdit?.id === p.id ? (
-                                    <div className="flex items-center gap-1.5">
-                                      <input
-                                        autoFocus
-                                        type="text"
-                                        value={inlineSkuEdit.value}
-                                        onChange={(e) => setInlineSkuEdit({ id: p.id, value: e.target.value.toUpperCase() })}
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") handleInlineSkuSave(p.id);
-                                          if (e.key === "Escape") setInlineSkuEdit(null);
-                                        }}
-                                        className="w-28 px-2 py-1 border border-[#C8782A] rounded-lg text-[11px] font-mono font-bold text-[#2A1810] focus:outline-none bg-white"
-                                      />
-                                      <button
-                                        onClick={() => handleInlineSkuSave(p.id)}
-                                        className="text-emerald-600 hover:text-emerald-800 text-[11px] font-semibold"
-                                        title="Save"
-                                      >✓</button>
-                                      <button
-                                        onClick={() => setInlineSkuEdit(null)}
-                                        className="text-[#4A2C1A]/50 hover:text-red-500 text-[11px]"
-                                        title="Cancel"
-                                      >✕</button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      onClick={() => setInlineSkuEdit({ id: p.id, value: p.sku || p.id })}
-                                      className="group/sku flex items-center gap-1.5 cursor-pointer"
-                                      title="Click to edit SKU"
-                                    >
-                                      <span className="px-2 py-0.5 rounded-md bg-[#2A1810]/5 text-[#2A1810] font-mono font-bold text-[11px] border border-transparent group-hover/sku:border-[#C8782A]/40 group-hover/sku:bg-[#C8782A]/5 transition-all">
-                                        {p.sku || p.id}
-                                      </span>
-                                      <FiEdit2 className="text-[10px] text-[#2A1810]/30 group-hover/sku:text-[#C8782A] transition-colors" />
-                                    </button>
-                                  )}
-                                </td>
-
-                                <td className="py-3.5 px-4">
-                                  <span className="px-2.5 py-1 rounded-full bg-[#2A1810]/5 text-[#2A1810] font-medium text-[11px] capitalize">
-                                    {p.subcategory || p.category.replace("-", " ")}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4">
-                                  <span className="px-2 py-0.5 rounded-full bg-[#C8782A]/10 text-[#C8782A] font-semibold text-[11px]">
-                                    {p.images?.length || 1} photo(s)
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-4">
-                                  <div className="font-mono text-[#C8782A] font-bold text-[11px]">{p.wattage}</div>
-                                  <div className="text-[#4A2C1A]/70 text-[11px] line-clamp-1">{p.material}</div>
-                                </td>
-                                <td className="py-3.5 px-4">
-                                  <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-emerald-100 text-emerald-800">
-                                    {p.usage || "Indoor"}
-                                  </span>
-                                </td>
-                                <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
-                                  <div className="flex items-center justify-end gap-1.5">
-                                    <button
-                                      onClick={() => startEditing(p)}
-                                      title="Edit product specifications & gallery"
-                                      className="px-2.5 py-1 rounded-lg bg-[#C8782A]/10 text-[#C8782A] hover:bg-[#C8782A] hover:text-white transition-colors flex items-center gap-1 font-medium text-[11px]"
-                                    >
-                                      <FiEdit2 className="text-xs" /> Edit
-                                    </button>
-                                    <Link href={`/ products / ${p.slug} `} target="_blank" className="p-1.5 rounded-lg text-[#4A2C1A]/70 hover:text-[#2A1810]" title="View live page">
-                                      <FiExternalLink className="text-sm" />
-                                    </Link>
-                                    <button onClick={() => handleDeleteProduct(p.id, p.name)} className="p-1.5 rounded-lg text-red-500 hover:text-red-700" title="Delete">
-                                      <FiTrash2 className="text-sm" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
                 )}
 
                 {/* View: Add OR Edit Luminaire */}
@@ -997,22 +1091,53 @@ export default function AdminPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                               {/* SKU / Model Number */}
                               <div>
-                                <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">
-                                  SKU / Model Number *
-                                </label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <label className="block text-xs font-semibold text-[#2A1810]">
+                                    SKU / Model Number *
+                                  </label>
+                                  {skuValidation.status === "ok" && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                                      <FiCheckCircle className="text-xs" /> SKU OK
+                                    </span>
+                                  )}
+                                  {skuValidation.status === "duplicate" && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md animate-pulse">
+                                      <FiAlertCircle className="text-xs" /> Already Exists
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="relative">
                                   <input
                                     type="text"
                                     required
                                     value={sku}
                                     onChange={(e) => setSku(e.target.value.toUpperCase())}
-                                    placeholder="e.g. CHGM2749"
-                                    className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs font-mono font-bold text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                                    placeholder="e.g. CHGM2749 or 626-500"
+                                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all focus:outline-none ${skuValidation.status === "duplicate"
+                                        ? "bg-rose-50/40 border-2 border-rose-500 text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
+                                        : skuValidation.status === "ok"
+                                          ? "bg-emerald-50/20 border border-emerald-500 text-[#2A1810] focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
+                                          : "bg-[#F6F2EC]/40 border border-[#2A1810]/15 text-[#2A1810] focus:border-[#C8782A]"
+                                      }`}
                                   />
                                 </div>
-                                <span className="text-[10px] text-[#4A2C1A]/60 mt-1 block">
-                                  Unique SKU (e.g. CHGM2749). Duplicates blocked.
-                                </span>
+                                {skuValidation.status === "duplicate" ? (
+                                  <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-[11px] text-rose-700 font-medium flex items-start gap-1.5">
+                                    <FiAlertCircle className="text-xs shrink-0 mt-0.5 text-rose-600" />
+                                    <span>
+                                      <strong>SKU already exists:</strong> &ldquo;{skuValidation.productName}&rdquo; is using this SKU. Provide a unique SKU before publishing.
+                                    </span>
+                                  </div>
+                                ) : skuValidation.status === "ok" ? (
+                                  <div className="mt-1.5 p-1.5 rounded-lg bg-emerald-50/80 border border-emerald-200/80 text-[11px] text-emerald-800 font-medium flex items-center gap-1.5">
+                                    <FiCheckCircle className="text-xs shrink-0 text-emerald-600" />
+                                    <span>✓ SKU Available — verified OK to publish.</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-amber-700 mt-1 block">
+                                    ⚠️ Please enter a unique SKU (e.g. CHGM2749, 626-500).
+                                  </span>
+                                )}
                               </div>
 
                               {/* Luminaire Name */}
@@ -1434,11 +1559,26 @@ export default function AdminPage() {
 
                           <button
                             type="submit"
-                            disabled={submitting}
-                            className="btn-3d btn-3d-dark text-xs px-7 py-3 rounded-full flex items-center gap-2 font-medium"
+                            disabled={submitting || skuValidation.status === "duplicate" || skuValidation.status === "empty"}
+                            className={`btn-3d text-xs px-7 py-3 rounded-full flex items-center gap-2 font-medium transition-all ${skuValidation.status === "duplicate"
+                                ? "bg-rose-900/60 text-white cursor-not-allowed opacity-60"
+                                : skuValidation.status === "empty"
+                                  ? "bg-[#2A1810]/40 text-white cursor-not-allowed opacity-60"
+                                  : "btn-3d-dark"
+                              }`}
                           >
                             {editingId ? <FiEdit2 className="text-sm" /> : <FiPlusCircle className="text-sm" />}
-                            <span>{submitting ? "Saving..." : editingId ? "Save Changes" : "Publish Luminaire"}</span>
+                            <span>
+                              {submitting
+                                ? "Saving..."
+                                : skuValidation.status === "duplicate"
+                                  ? "Cannot Publish: SKU Already Exists"
+                                  : skuValidation.status === "empty"
+                                    ? "Provide SKU to Publish"
+                                    : editingId
+                                      ? "Save Changes"
+                                      : "Publish Luminaire"}
+                            </span>
                           </button>
                         </div>
                       </form>
