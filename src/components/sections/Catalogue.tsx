@@ -2,6 +2,7 @@
 
 import { PRODUCTS } from "@/data/products";
 import { useState } from "react";
+import Link from "next/link";
 import ParallaxImage from "@/components/ui/ParallaxImage";
 
 const CATEGORIES_FILTER = [
@@ -110,9 +111,11 @@ export default function Catalogue() {
                         {product.subcategory}
                       </span>
                     )}
-                    <h3 className="text-[14px] font-medium leading-snug text-[#2A1810] mb-1 line-clamp-2">
-                      {product.name}
-                    </h3>
+                    <Link href={`/products/${product.slug}`}>
+                      <h3 className="text-[14px] font-medium leading-snug text-[#2A1810] hover:text-[#C8782A] transition-colors mb-1 line-clamp-2">
+                        {product.name}
+                      </h3>
+                    </Link>
                     {product.tagline && (
                       <p className="text-[12px] text-[#6b5f55] font-normal mb-3 line-clamp-1">{product.tagline}</p>
                     )}
@@ -138,39 +141,49 @@ export default function Catalogue() {
                       </div>
                     )}
 
-                    {/* Enquire CTA */}
-                    <div className="mt-auto pt-2">
+                    {/* Dual Action CTAs */}
+                    <div className="mt-auto pt-2 flex items-center gap-2">
+                      <Link
+                        href={`/products/${product.slug}`}
+                        className="btn-3d btn-3d-outline flex-1 py-2 px-3 text-[12px] font-medium text-center rounded-xl"
+                      >
+                        Specs
+                      </Link>
                       <a
                         href={buildWALink(product.name, product.id)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn-3d btn-3d-white w-full py-2 px-3 text-[12px] font-medium text-[#2A1810] gap-2"
+                        className="btn-3d btn-3d-dark py-2 px-3 text-[12px] font-medium gap-1.5 rounded-xl flex items-center justify-center"
+                        title="Enquire on WhatsApp"
                       >
-                        <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366]" />
-                        <span>Enquire on WhatsApp</span>
+                        <WhatsAppIcon className="w-3.5 h-3.5" />
+                        <span>Enquire</span>
                       </a>
                     </div>
                   </div>
                 </div>
-                );
-        })}
-              </div>
+              );
+            })}
+          </div>
 
-      {/* Bottom CTA */ }
-            <div className="mt-12 text-center">
-              <p className="text-[14px] text-[#6b5f55] mb-4">
-                Don&rsquo;t see what you need? We carry 150+ SKUs — just ask.
-              </p>
-              <a
-                href="https://wa.me/919990179666?text=Hi%20Nivoseas%2C%20I%20am%20looking%20for%20a%20specific%20lighting%20product.%20Can%20you%20help%3F"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-3d btn-3d-dark px-7 py-3.5 text-sm gap-2.5"
-              >
-                <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
-                <span>Chat with us on WhatsApp</span>
-              </a>
-            </div>
+          {/* Bottom CTA */}
+          <div className="mt-12 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              href="/products"
+              className="btn-3d btn-3d-dark px-7 py-3.5 text-sm"
+            >
+              Browse Full Catalogue (150+ Products) →
+            </Link>
+            <a
+              href="https://wa.me/919990179666?text=Hi%20Nivoseas%2C%20I%20am%20looking%20for%20a%20specific%20lighting%20product.%20Can%20you%20help%3F"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-3d btn-3d-outline px-7 py-3.5 text-sm gap-2.5 flex items-center"
+            >
+              <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
+              <span>Chat with us on WhatsApp</span>
+            </a>
+          </div>
 
     </div>
     </section >

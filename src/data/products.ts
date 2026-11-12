@@ -12,6 +12,8 @@ export interface Product {
   category: ProductCategory;
   subcategory?: string;
   tagline?: string;
+  description?: string;
+  features?: string[];
   wattage?: string;
   shape?: string;
   colourTemp?: string;
@@ -32,6 +34,52 @@ const WC = (path: string) =>
   `https://nivoseas.com/wp-content/uploads/${path}`;
 
 export const PRODUCTS: Product[] = [
+  {
+    id: "626-500",
+    name: "Luxury LED Ceiling Light – Crystal & Gold Finish (Model 626/500)",
+    slug: "luxury-led-ceiling-light-crystal-gold-finish-model-626-500",
+    category: "decorative",
+    subcategory: "Thali",
+    tagline: "Patterned glass diffuser with sparkling crystal accents and dual-tone LED glow.",
+    description:
+      "Enhance your interiors with this elegant designer LED ceiling light, crafted with a premium gold-finish body and sparkling crystal accents. The beautifully patterned glass diffuser adds a refined touch, while dual LED lighting creates a warm and inviting atmosphere. Blends classic opulence with modern LED technology, making it a statement piece for luxury residences and boutique spaces.",
+    features: [
+      "Dual LED lighting system for layered ambient & accent illumination",
+      "Outer LED: Warm White + Blue with automatic color-changing effect",
+      "Inner LED: White + Warm White for soft, balanced primary lighting",
+      "Crystal-studded decorative ring with intricate gold metal detailing",
+      "Energy-efficient, long-lasting LED performance (40,000 hours)",
+      "Ideal for living rooms, master bedrooms, dining areas, and hotel foyers",
+    ],
+    material: "Premium Gold-Finish Metal, Patterned Glass Diffuser & Sparkling Crystal",
+    wattage: "Dual LED Integrated System (500mm / 20\" Diameter)",
+    shape: "Circular Flush Mount (Thali)",
+    colourTemp: "Multi-Tone Tunable (Warm White, White & Blue Accent)",
+    lightColour: "Dual Layer Warm Ambient & Decorative Glow",
+    voltage: "220V - 240V AC",
+    warranty: "2 Years Authentic Warranty",
+    lampLife: "40,000 Hours",
+    usage: "indoor",
+    origin: "India",
+    moq: 1,
+    images: [
+      "https://nivoseas.com/wp-content/uploads/2025/12/16-4.jpg",
+      "https://nivoseas.com/wp-content/uploads/2025/12/12-3.jpg",
+      "https://nivoseas.com/wp-content/uploads/2025/12/6-2.jpg",
+      "https://nivoseas.com/wp-content/uploads/2025/12/11-2.jpg",
+      "https://nivoseas.com/wp-content/uploads/2025/12/15-3.jpg",
+      "https://nivoseas.com/wp-content/uploads/2025/12/5-2.jpg",
+    ],
+    specs: {
+      "Model Number": "626/500",
+      "Diameter": "500 mm (Approx. 20 Inches)",
+      "Lighting Engine": "Dual-Circuit LED with Multi-Mode Illumination",
+      "Glass Diffuser": "Artisanal Textured Pattern with Refractive Crystal Border",
+      "Finish": "Electroplated Mirror Gold",
+      "Installation": "Ceiling Flush Mount (Thali Format)",
+    },
+    featured: true,
+  },
   {
     id: "109-3",
     name: "Nivoseas 109/3 Decorative 3-Light",
