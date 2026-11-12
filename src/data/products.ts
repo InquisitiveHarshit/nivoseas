@@ -3,10 +3,42 @@ export type ProductCategory =
   | "decorative"
   | "outdoor-gate"
   | "architectural-led"
-  | "led-fans";
+  | "led-fans"
+  | "indoor-lighting"
+  | "commercial"
+  | "brands";
+
+export interface TechnicalSpecItem {
+  label: string;
+  value: string;
+}
+
+export const DEFAULT_TECHNICAL_SPECS: TechnicalSpecItem[] = [
+  { label: "Product Dimensions", value: "Overall Dimensions – Height: 90 cm Length: 89 cm Width: 30 cm Base Dimension- Height: 52 cm Diameter: 89 cm" },
+  { label: "Adjustable in height", value: "Yes, ‘Further adjustable as per your requirement’" },
+  { label: "Height minimum (Inch)", value: "52" },
+  { label: "Height maximum (Inch)", value: "90" },
+  { label: "Base Material", value: "Metal & Crystal" },
+  { label: "Base Colour", value: "Rose Gold, Black & Clear" },
+  { label: "Holder Type", value: "E14 Holder" },
+  { label: "Bulb Recommended", value: "4 to 9 watts" },
+  { label: "Voltage", value: "220-240" },
+  { label: "Bulb Included", value: "Yes" },
+  { label: "Number of Bulb Required", value: "12 Bulbs" },
+  { label: "Lighting Part", value: "LED" },
+  { label: "Wire Length", value: "1.5 Meters" },
+  { label: "Wire material", value: "PVC" },
+  { label: "Warranty", value: "12 Months" },
+  { label: "Dimmable", value: "Yes, ‘From the main Electric Supply’" },
+  { label: "Including installation materials", value: "Yes" },
+  { label: "Package Contents", value: "1 Pc Chandelier Light" },
+  { label: "Product Net Weight (Kgs)", value: "8.5" },
+  { label: "Suggestive Usage", value: "Indoor - Living Room, Dining Area & Foyer" },
+];
 
 export interface Product {
   id: string;
+  sku?: string;
   name: string;
   slug: string;
   category: ProductCategory;
@@ -23,10 +55,12 @@ export interface Product {
   warranty?: string;
   lampLife?: string;
   usage?: ProductUsage;
+  suggestiveUsage?: string;
   origin?: string;
   moq?: number;
   images: string[];
   specs?: Record<string, string>;
+  technicalSpecs?: TechnicalSpecItem[];
   featured?: boolean;
 }
 
@@ -34,6 +68,41 @@ const WC = (path: string) =>
   `https://nivoseas.com/wp-content/uploads/${path}`;
 
 export const PRODUCTS: Product[] = [
+  {
+    id: "CHGM2749",
+    sku: "CHGM2749",
+    name: "Luxury Rose Gold & Crystal Chandelier (CHGM2749)",
+    slug: "luxury-rose-gold-crystal-chandelier-chgm2749",
+    category: "decorative",
+    subcategory: "Chandelier",
+    tagline: "Handcrafted rose gold and clear crystal tiers with 12-bulb refractive illumination.",
+    description:
+      "An opulent statement chandelier combining precision-cut faceted crystals with a handcrafted rose gold, black, and clear metalwork base. Features 12 E14 bulb holders, height-adjustable suspension from 52 to 90 inches, and mains dimming capability for bespoke architectural living spaces, grand dining halls, and double-height foyers.",
+    features: [
+      "12-bulb E14 multi-tier refractive crystal lighting arrangement",
+      "Adjustable suspension height from 52 inches up to 90 inches",
+      "Handcrafted base in rose gold, deep black, and optical crystal",
+      "Compatible with 4W to 9W LED E14 bulbs (220-240V)",
+      "Supports smooth dimming directly from the main electric supply",
+      "Supplied with complete installation materials and 1.5m PVC suspension wire",
+    ],
+    wattage: "12 × E14 Bulbs (4-9W Recommended) / Up to 108W",
+    material: "Metal & Crystal (Rose Gold, Black & Clear)",
+    voltage: "220-240V",
+    warranty: "12 Months Authentic Warranty",
+    usage: "indoor",
+    suggestiveUsage: "Indoor - Living Room, Dining Area & Double-Height Foyer",
+    moq: 1,
+    images: [
+      "https://nivoseas.com/wp-content/uploads/2024/01/jl8558-rose-gold.jpg",
+      "/Minimalist Luxury Chandelier Interior.webp",
+      "https://nivoseas.com/wp-content/uploads/2025/12/16-4.jpg",
+      "https://nivoseas.com/wp-content/uploads/2024/01/nivoseas-109-3.jpg",
+      "https://nivoseas.com/wp-content/uploads/2025/12/12-3.jpg",
+    ],
+    technicalSpecs: DEFAULT_TECHNICAL_SPECS,
+    featured: true,
+  },
   {
     id: "626-500",
     name: "Luxury LED Ceiling Light – Crystal & Gold Finish (Model 626/500)",

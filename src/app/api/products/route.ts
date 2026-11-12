@@ -45,10 +45,10 @@ export async function POST(request: Request) {
     const created = addProduct(body);
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Failed to create product" },
-      { status: 500 }
+      { success: false, error: error?.message || "Failed to create product" },
+      { status: 400 }
     );
   }
 }
@@ -74,10 +74,10 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: "Failed to update product" },
-      { status: 500 }
+      { success: false, error: error?.message || "Failed to update product" },
+      { status: 400 }
     );
   }
 }

@@ -32,10 +32,20 @@ export default function Header() {
       slug: "decorative",
       products: PRODUCTS.filter((p) => p.category === "decorative"),
     },
+    "indoor-lighting": {
+      name: "Indoor Lighting",
+      slug: "indoor-lighting",
+      products: PRODUCTS.filter((p) => p.category === "indoor-lighting"),
+    },
     "outdoor-gate": {
       name: "Outdoor & Gate Lights",
       slug: "outdoor-gate",
       products: PRODUCTS.filter((p) => p.category === "outdoor-gate"),
+    },
+    commercial: {
+      name: "Commercial Lighting",
+      slug: "commercial",
+      products: PRODUCTS.filter((p) => p.category === "commercial"),
     },
     "architectural-led": {
       name: "Architectural LED",
@@ -46,6 +56,11 @@ export default function Header() {
       name: "LED Ceiling Fans",
       slug: "led-fans",
       products: PRODUCTS.filter((p) => p.category === "led-fans"),
+    },
+    brands: {
+      name: "Brands",
+      slug: "brands",
+      products: PRODUCTS.filter((p) => p.category === "brands"),
     },
   };
 

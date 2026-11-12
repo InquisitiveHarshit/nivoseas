@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full" data-scroll-behavior="smooth">
+    <html lang="en" className="h-full" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
   {/* Google Fonts: Schibsted Grotesk, Fraunces, and Inter */ }
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -78,7 +78,7 @@ export default function RootLayout({
     }}
   />
       </head >
-    <body className="min-h-full bg-[#F3EDE4] text-[#2A1810] font-sans antialiased">
+    <body className="min-h-full bg-[#F3EDE4] text-[#2A1810] font-sans antialiased" suppressHydrationWarning>
       {children}
     </body>
     </html >

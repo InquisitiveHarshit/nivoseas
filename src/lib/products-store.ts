@@ -52,7 +52,19 @@ export function getProductsByCategory(category: ProductCategory): Product[] {
 export function addProduct(newProductData: Omit<Product, "id" | "slug"> & { id?: string; slug?: string }): Product {
   const products = getAllProducts();
 
-  const id = newProductData.id || `nivo-${Date.now().toString(36)}`;
+  const sku = newProductData.sku ? newProductData.sku.trim() : undefined;
+  if (sku) {
+    const duplicate = products.find(
+      (p) =>
+        (p.sku && p.sku.toLowerCase() === sku.toLowerCase()) ||
+        p.id.toLowerCase() === sku.toLowerCase()
+    );
+    if (duplicate) {
+      throw new Error(`Duplicate SKU: "${sku}" is already assigned to "${duplicate.name}". Each product must have a unique SKU.`);
+    }
+  }
+
+  const id = newProductData.id || sku || `nivo-${Date.now().toString(36)}`;
   const slug =
     newProductData.slug ||
     newProductData.name
@@ -65,9 +77,10 @@ export function addProduct(newProductData: Omit<Product, "id" | "slug"> & { id?:
   const fullProduct: Product = {
     ...newProductData,
     id,
+    sku: sku || id,
     slug,
     moq: newProductData.moq || 1,
-    origin: newProductData.origin || "India",
+    origin: newProductData.origin || undefined,
     images: newProductData.images && newProductData.images.length > 0
       ? newProductData.images
       : ["/Minimalist Luxury Chandelier Interior.webp"],
@@ -92,10 +105,25 @@ export function updateProduct(id: string, updates: Partial<Product>): Product | 
   if (index === -1) return null;
 
   const existing = products[index];
+
+  const newSku = updates.sku ? updates.sku.trim() : undefined;
+  if (newSku) {
+    const duplicate = products.find(
+      (p) =>
+        p.id !== existing.id &&
+        ((p.sku && p.sku.toLowerCase() === newSku.toLowerCase()) ||
+         p.id.toLowerCase() === newSku.toLowerCase())
+    );
+    if (duplicate) {
+      throw new Error(`Duplicate SKU: "${newSku}" is already assigned to "${duplicate.name}". Each product must have a unique SKU.`);
+    }
+  }
+
   const updatedProduct: Product = {
     ...existing,
     ...updates,
     id: existing.id, // preserve immutable ID
+    sku: newSku || existing.sku || existing.id,
     slug: updates.slug || (updates.name && updates.name !== existing.name
       ? updates.name.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "")
       : existing.slug),

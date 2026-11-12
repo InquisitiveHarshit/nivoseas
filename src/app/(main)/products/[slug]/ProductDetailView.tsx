@@ -36,9 +36,11 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const activeImage = images[activeImageIndex] || images[0];
+  const [isSpecsOpen, setIsSpecsOpen] = useState(true);
 
+  const skuCode = product.sku || product.id;
   const waText = encodeURIComponent(
-    `Hi Nivoseas, I would like to enquire about "${product.name}" (Model/ID: ${product.id}). Could you provide current pricing, stock availability, and lead time?`
+      `Hi Nivoseas, I would like to enquire about "${product.name}" (SKU: ${skuCode}). Could you provide current pricing, stock availability, and lead time?`
   );
   const waUrl = `https://wa.me/919990179666?text=${waText}`;
 
@@ -46,6 +48,7 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
   const optimizedMain = cldPresets.productMain(activeImage);
   const optimizedThumbs = images.map((img) => cldPresets.galleryThumb(img));
 
+  // Legacy fallback spec rows (NO origin per design specification)
   const specRows: { label: string; value: string }[] = [
     product.subcategory ? { label: "Fixture Type", value: product.subcategory } : null,
     product.material ? { label: "Material & Finish", value: product.material } : null,
@@ -55,9 +58,23 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
     product.voltage ? { label: "Voltage Rating", value: product.voltage } : null,
     product.warranty ? { label: "Warranty", value: product.warranty } : null,
     product.lampLife ? { label: "Lamp Life", value: product.lampLife } : null,
-    product.usage ? { label: "Environment", value: product.usage === "outdoor" ? "Outdoor Rated" : product.usage === "both" ? "Indoor & Outdoor" : "Indoor" } : null,
-    product.origin ? { label: "Origin", value: product.origin } : null,
+    (product.suggestiveUsage || product.usage)
+      ? {
+        label: "Environment / Suggestive Usage",
+        value:
+          product.suggestiveUsage ||
+          (product.usage === "outdoor"
+            ? "Outdoor Rated"
+            : product.usage === "both"
+              ? "Indoor & Outdoor"
+              : "Indoor"),
+      }
+      : null,
   ].filter(Boolean) as { label: string; value: string }[];
+
+  const hasOrderedTechSpecs = Boolean(
+    product.technicalSpecs && product.technicalSpecs.length > 0
+  );
 
   return (
     <div className="min-h-screen bg-[#F3EDE4] text-[#2A1810]">
@@ -137,11 +154,10 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
                   <button
                     key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`relative w-[72px] h-[72px] rounded-2xl overflow-hidden border-2 transition-all duration-200 shrink-0 bg-white ${
-                      activeImageIndex === idx
+                    className={`relative w-[72px] h-[72px] rounded-2xl overflow-hidden border-2 transition-all duration-200 shrink-0 bg-white ${activeImageIndex === idx
                         ? "border-[#C8782A] ring-2 ring-[#C8782A]/30 scale-110 shadow-lg"
                         : "border-[#2A1810]/10 hover:border-[#C8782A]/40 opacity-60 hover:opacity-100"
-                    }`}
+                      }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -178,15 +194,15 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
 
           {/* ══ Right: Info ══ */}
           <div className="lg:col-span-6 space-y-6">
-            {/* Category + Model ID */}
+            {/* Category + SKU Identifier */}
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#C8782A]">
                 {product.category.replace(/-/g, " ")}
               </span>
               <span className="text-[#4A2C1A]/30">•</span>
-              <span className="text-xs text-[#4A2C1A]/60 font-mono bg-[#2A1810]/5 px-2 py-0.5 rounded-md">
-                Model #{product.id}
-              </span>
+                <span className="text-xs text-[#2A1810] font-mono font-semibold bg-[#2A1810]/5 px-2.5 py-1 rounded-md border border-[#2A1810]/8">
+                  SKU: {skuCode}
+                </span>
             </div>
 
             {/* Name + Tagline */}
@@ -272,43 +288,155 @@ export default function ProductDetailView({ product, relatedProducts }: ProductD
               </div>
             )}
 
-            {/* ── Tech Specs Table ── */}
-            {specRows.length > 0 && (
+            {/* ── Technical Specifications Table ── */}
+            {hasOrderedTechSpecs ? (
               <div className="rounded-[28px] bg-white border border-[#2A1810]/10 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 bg-[#2A1810]/5 border-b border-[#2A1810]/8">
+                <button
+                  type="button"
+                  onClick={() => setIsSpecsOpen(!isSpecsOpen)}
+                  className="w-full px-6 py-4 bg-[#2A1810]/5 border-b border-[#2A1810]/8 flex items-center justify-between cursor-pointer hover:bg-[#2A1810]/8 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-xs uppercase tracking-[0.15em] font-bold text-[#2A1810]">
+                      Technical Specifications
+                    </h2>
+                    <span className="text-[11px] font-mono text-[#C8782A] font-semibold">
+                      SKU: {skuCode}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#C8782A]">
+                    <span className="hidden sm:inline">{isSpecsOpen ? "Collapse Specs" : "Open Specs Table"}</span>
+                    <div
+                      className={`w-6 h-6 rounded-md bg-white border border-[#2A1810]/10 flex items-center justify-center transition-transform duration-200 ${
+                        isSpecsOpen ? "rotate-180" : ""
+                      }`}
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#2A1810]">
+                        <path
+                          fillRule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </button>
+                {isSpecsOpen && (
+                  <dl className="divide-y divide-[#2A1810]/5">
+                    {product.technicalSpecs!
+                      .filter((row) => row.value && row.value.trim().length > 0)
+                      .map((row, idx) => (
+                        <div
+                          key={`${row.label}-${idx}`}
+                          className="px-6 py-3.5 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1.5 sm:gap-4"
+                        >
+                          <dt className="text-xs sm:text-sm text-[#4A2C1A]/75 font-medium shrink-0 sm:max-w-[45%]">
+                            {row.label}
+                          </dt>
+                          <dd className="text-xs sm:text-sm text-[#2A1810] font-semibold sm:text-right leading-relaxed">
+                            {row.value}
+                          </dd>
+                        </div>
+                      ))}
+                    {/* Also show Wattage & Environment if provided and not already covered in rows */}
+                    {product.wattage &&
+                      !product.technicalSpecs!.some(
+                        (r) =>
+                          r.label.toLowerCase().includes("wattage") ||
+                          r.label.toLowerCase().includes("power")
+                      ) && (
+                        <div className="px-6 py-3.5 flex justify-between items-center gap-4 bg-[#C8782A]/5">
+                          <dt className="text-xs sm:text-sm text-[#4A2C1A]/75 font-medium shrink-0">
+                            Wattage / Lamp Rating
+                          </dt>
+                          <dd className="text-xs sm:text-sm text-[#C8782A] font-bold text-right">
+                            {product.wattage}
+                          </dd>
+                        </div>
+                      )}
+                    {(product.suggestiveUsage || product.usage) &&
+                      !product.technicalSpecs!.some(
+                        (r) =>
+                          r.label.toLowerCase().includes("environment") ||
+                          r.label.toLowerCase().includes("usage")
+                      ) && (
+                        <div className="px-6 py-3.5 flex justify-between items-center gap-4">
+                          <dt className="text-xs sm:text-sm text-[#4A2C1A]/75 font-medium shrink-0">
+                            Environment / Suggestive Usage
+                          </dt>
+                          <dd className="text-xs sm:text-sm text-[#2A1810] font-semibold text-right">
+                            {product.suggestiveUsage ||
+                              (product.usage === "outdoor"
+                                ? "Outdoor Rated"
+                                : product.usage === "both"
+                                ? "Indoor & Outdoor"
+                                : "Indoor Living & Commercial")}
+                          </dd>
+                        </div>
+                      )}
+                  </dl>
+                )}
+              </div>
+            ) : specRows.length > 0 ? (
+              <div className="rounded-[28px] bg-white border border-[#2A1810]/10 shadow-sm overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsSpecsOpen(!isSpecsOpen)}
+                  className="w-full px-6 py-4 bg-[#2A1810]/5 border-b border-[#2A1810]/8 flex items-center justify-between cursor-pointer hover:bg-[#2A1810]/8 transition-colors text-left"
+                >
                   <h2 className="text-xs uppercase tracking-[0.15em] font-bold text-[#2A1810]">
                     Technical Specifications
                   </h2>
-                </div>
-                <dl className="divide-y divide-[#2A1810]/5">
-                  {specRows.map((row) => (
-                    <div key={row.label} className="px-6 py-3.5 flex justify-between items-center gap-4">
-                      <dt className="text-xs sm:text-sm text-[#4A2C1A]/70 font-medium shrink-0">{row.label}</dt>
-                      <dd className="text-xs sm:text-sm text-[#2A1810] font-semibold text-right">{row.value}</dd>
+                  <div className="flex items-center gap-2 text-xs font-semibold text-[#C8782A]">
+                    <span className="hidden sm:inline">{isSpecsOpen ? "Collapse Specs" : "Open Specs Table"}</span>
+                    <div
+                      className={`w-6 h-6 rounded-md bg-white border border-[#2A1810]/10 flex items-center justify-center transition-transform duration-200 ${
+                        isSpecsOpen ? "rotate-180" : ""
+                      }`}
+                    >
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-[#2A1810]">
+                        <path
+                          fillRule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                     </div>
-                  ))}
-                </dl>
+                  </div>
+                </button>
+                {isSpecsOpen && (
+                  <dl className="divide-y divide-[#2A1810]/5">
+                    {specRows.map((row) => (
+                      <div key={row.label} className="px-6 py-3.5 flex justify-between items-center gap-4">
+                        <dt className="text-xs sm:text-sm text-[#4A2C1A]/70 font-medium shrink-0">{row.label}</dt>
+                        <dd className="text-xs sm:text-sm text-[#2A1810] font-semibold text-right">{row.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
               </div>
-            )}
+            ) : null}
 
             {/* ── Extended Specs (from product.specs) ── */}
-            {product.specs && Object.keys(product.specs).length > 0 && (
-              <div className="rounded-[28px] bg-white border border-[#2A1810]/10 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 bg-[#C8782A]/8 border-b border-[#2A1810]/8">
-                  <h2 className="text-xs uppercase tracking-[0.15em] font-bold text-[#C8782A]">
-                    Extended Engineering Parameters
-                  </h2>
-                </div>
-                <dl className="divide-y divide-[#2A1810]/5">
-                  {Object.entries(product.specs).map(([key, val]) => (
-                    <div key={key} className="px-6 py-3.5 flex justify-between items-center gap-4">
-                      <dt className="text-xs sm:text-sm text-[#4A2C1A]/70 font-medium shrink-0">{key}</dt>
-                      <dd className="text-xs sm:text-sm text-[#2A1810] font-semibold text-right">{val}</dd>
+              {
+                product.specs && Object.keys(product.specs).length > 0 && !hasOrderedTechSpecs && (
+                  <div className="rounded-[28px] bg-white border border-[#2A1810]/10 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 bg-[#C8782A]/8 border-b border-[#2A1810]/8">
+                      <h2 className="text-xs uppercase tracking-[0.15em] font-bold text-[#C8782A]">
+                        Extended Engineering Parameters
+                      </h2>
                     </div>
-                  ))}
-                </dl>
-              </div>
-            )}
+                    <dl className="divide-y divide-[#2A1810]/5">
+                      {Object.entries(product.specs).map(([key, val]) => (
+                        <div key={key} className="px-6 py-3.5 flex justify-between items-center gap-4">
+                          <dt className="text-xs sm:text-sm text-[#4A2C1A]/70 font-medium shrink-0">{key}</dt>
+                          <dd className="text-xs sm:text-sm text-[#2A1810] font-semibold text-right">{val}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                )
+              }
           </div>
         </div>
 
