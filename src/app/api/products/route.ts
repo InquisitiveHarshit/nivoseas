@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import ProductModel from "@/models/Product";
 import { PRODUCTS as SEED_PRODUCTS } from "@/data/products";
@@ -161,100 +162,131 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Normalise SKU if provided
-    if (updates.sku) updates.sku = updates.sku.trim().toUpperCase();
-
-    // Duplicate SKU check (exclude self)
-    if (updates.sku) {
-      const dup = await ProductModel.findOne({ sku: updates.sku, _id: { $ne: id } });
-      if (!dup) {
-        // also check by old sku field matching id
-        const dupBySku = await ProductModel.findOne({ sku: updates.sku });
-        if (dupBySku && dupBySku.sku !== id && dupBySku.id !== id) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `Duplicate SKU: "${updates.sku}" is already assigned to "${dupBySku.name}".`,
-            },
-            { status: 409 }
-          );
-        }
-      }
+    // Build safe lookup conditions without casting arbitrary strings to ObjectId
+    const isObjectId = typeof id === "string" && mongoose.Types.ObjectId.isValid(id) && id.length === 24;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const findConditions: any[] = [
+      { sku: id },
+      { sku: String(id).toUpperCase() },
+      { slug: String(id).toLowerCase() },
+    ];
+    if (isObjectId) {
+      findConditions.push({ _id: new mongoose.Types.ObjectId(id) });
     }
 
-    // Find by id (sku) or MongoDB _id or slug
-    const product = await ProductModel.findOneAndUpdate(
-      { $or: [{ sku: id }, { slug: id }, { _id: id.length === 24 ? id : undefined }] },
-      { $set: updates },
-      { new: true }
-    );
-
-    if (!product) {
+    // 1. Locate the existing product document
+    const existing = await ProductModel.findOne({ $or: findConditions });
+    if (!existing) {
       return NextResponse.json(
-        { success: false, error: "Product not found" },
+        { success: false, error: `Product with ID/SKU "${id}" not found` },
         { status: 404 }
       );
     }
 
-    const jsonProd = { ...product.toJSON(), id: product.sku };
-    try {
-      updateProduct(id, updates);
-    } catch (e) {
-      console.warn("Could not sync update to local cache:", e);
+    // 2. Normalise and check duplicate SKU if updating SKU
+    if (updates.sku) {
+        const newSku = updates.sku.trim().toUpperCase();
+        // Ensure no other product already owns this SKU (using actual ObjectId for _id)
+        const dup = await ProductModel.findOne({
+          sku: newSku,
+          _id: { $ne: existing._id },
+        });
+        if (dup) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Duplicate SKU: "${newSku}" is already assigned to "${dup.name}".`,
+            },
+            { status: 409 }
+          );
+        }
+        updates.sku = newSku;
+      }
+
+    // 3. Update using the verified MongoDB ObjectId
+    const updated = await ProductModel.findByIdAndUpdate(
+          existing._id,
+          { $set: updates },
+      { returnDocument: "after" }
+        );
+
+        if (!updated) {
+          return NextResponse.json(
+        { success: false, error: "Failed to save product updates" },
+            { status: 500 }
+          );
+        }
+
+        const jsonProd = { ...updated.toJSON(), id: updated.sku };
+        try {
+          updateProduct(id, updates);
+        } catch (e) {
+          console.warn("Could not sync update to local cache:", e);
+        }
+
+        return NextResponse.json({ success: true, data: jsonProd });
+      } catch (error: unknown) {
+        console.error("[PUT /api/products]", error);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const msg = (error as any)?.message || "Failed to update product";
+        return NextResponse.json({ success: false, error: msg }, { status: 400 });
+      }
     }
 
-    return NextResponse.json({ success: true, data: jsonProd });
-  } catch (error: unknown) {
-    console.error("[PUT /api/products]", error);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const msg = (error as any)?.message || "Failed to update product";
-    return NextResponse.json({ success: false, error: msg }, { status: 400 });
-  }
-}
+    // ─────────────────────────────────────────────
+    // DELETE /api/products?id=SKUORID
+    // ─────────────────────────────────────────────
+    export async function DELETE(request: Request) {
+      const rl = checkRateLimit(request, { limit: 20, windowMs: 60 * 1000 });
+      if (rl.response) return rl.response;
 
-// ─────────────────────────────────────────────
-// DELETE /api/products?id=SKUORID
-// ─────────────────────────────────────────────
-export async function DELETE(request: Request) {
-    const rl = checkRateLimit(request, { limit: 20, windowMs: 60 * 1000 });
-    if (rl.response) return rl.response;
+        try {
+          await connectDB();
 
-    try {
-      await connectDB();
+          const { searchParams } = new URL(request.url);
+          const id = searchParams.get("id");
 
-      const { searchParams } = new URL(request.url);
-      const id = searchParams.get("id");
+          if (!id) {
+            return NextResponse.json(
+              { success: false, error: "Product ID or SKU is required" },
+              { status: 400 }
+            );
+          }
 
-      if (!id) {
-        return NextResponse.json(
-          { success: false, error: "Product ID or SKU is required" },
-          { status: 400 }
-        );
+          const isObjectId = typeof id === "string" && mongoose.Types.ObjectId.isValid(id) && id.length === 24;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const deleteConditions: any[] = [
+            { sku: id },
+            { sku: String(id).toUpperCase() },
+            { slug: String(id).toLowerCase() },
+          ];
+          if (isObjectId) {
+            deleteConditions.push({ _id: new mongoose.Types.ObjectId(id) });
+          }
+
+          const deleted = await ProductModel.findOneAndDelete({
+            $or: deleteConditions,
+          });
+
+          if (!deleted) {
+            return NextResponse.json(
+        { success: false, error: "Product not found" },
+              { status: 404 }
+            );
+          }
+
+          try {
+            deleteProduct(id);
+          } catch (e) {
+            console.warn("Could not sync delete to local cache:", e);
+          }
+
+          return NextResponse.json({ success: true, message: `Deleted "${deleted.name}"` });
+        } catch (error: unknown) {
+          console.error("[DELETE /api/products]", error);
+          return NextResponse.json(
+            { success: false, error: "Failed to delete product" },
+            { status: 500 }
+          );
+        }
       }
-
-      const deleted = await ProductModel.findOneAndDelete({
-        $or: [{ sku: id }, { slug: id }],
-      });
-
-      if (!deleted) {
-        return NextResponse.json(
-          { success: false, error: "Product not found" },
-          { status: 404 }
-        );
-      }
-
-      try {
-        deleteProduct(id);
-      } catch (e) {
-        console.warn("Could not sync delete to local cache:", e);
-      }
-
-      return NextResponse.json({ success: true, message: `Deleted "${deleted.name}"` });
-    } catch (error: unknown) {
-      console.error("[DELETE /api/products]", error);
-      return NextResponse.json(
-        { success: false, error: "Failed to delete product" },
-        { status: 500 }
-      );
-    }
-  }

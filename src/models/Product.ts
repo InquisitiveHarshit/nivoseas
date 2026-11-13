@@ -81,10 +81,8 @@ const ProductSchema = new Schema<IProduct>(
   }
 );
 
-// Index for fast filtering
+// Indexes for fast querying (sku and slug indexes are auto-created by unique: true on the fields)
 ProductSchema.index({ category: 1 });
-ProductSchema.index({ slug: 1 }, { unique: true });
-ProductSchema.index({ sku: 1 }, { unique: true });
 ProductSchema.index({ featured: -1, createdAt: -1 });
 
 const ProductModel: Model<IProduct> =
