@@ -39,9 +39,71 @@ export function getAllProducts(): Product[] {
   return ensureDataFile();
 }
 
+/**
+ * Server-side async fetcher reading live from MongoDB Atlas with fallback to local store.
+ * Guarantees that any update in MongoDB immediately reflects across the website.
+ */
+export async function getDbProducts(): Promise<Product[]> {
+  try {
+    const { connectDB } = await import("@/lib/mongodb");
+    const ProductModel = (await import("@/models/Product")).default;
+    await connectDB();
+    const docs = await ProductModel.find({}).sort({ featured: -1, createdAt: -1 }).lean();
+    if (docs && docs.length > 0) {
+      return docs.map((p) => ({
+        ...p,
+        id: (p.sku as string) || (p._id as object).toString(),
+        sku: (p.sku as string) || (p._id as object).toString(),
+        _id: undefined,
+        __v: undefined,
+      })) as unknown as Product[];
+    }
+  } catch (err) {
+    console.warn("MongoDB fetch in getDbProducts failed, using local store:", err);
+  }
+  return getAllProducts();
+}
+
 export function getProductBySlug(slug: string): Product | undefined {
   const products = getAllProducts();
-  return products.find((p) => p.slug === slug);
+  const lower = slug.toLowerCase().trim();
+  return products.find(
+    (p) =>
+      p.slug.toLowerCase().trim() === lower ||
+      (p.sku && p.sku.toLowerCase().trim() === lower) ||
+      p.id.toLowerCase().trim() === lower
+  );
+}
+
+/**
+ * Server-side async fetcher for individual product by slug or SKU from MongoDB.
+ */
+export async function getDbProductBySlug(slug: string): Promise<Product | undefined> {
+  const normSlug = slug.toLowerCase().trim();
+  try {
+    const { connectDB } = await import("@/lib/mongodb");
+    const ProductModel = (await import("@/models/Product")).default;
+    await connectDB();
+    const doc = await ProductModel.findOne({
+      $or: [
+        { slug: normSlug },
+        { sku: slug.toUpperCase().trim() },
+        { sku: slug.trim() },
+      ],
+    }).lean();
+    if (doc) {
+      return {
+        ...doc,
+        id: (doc.sku as string) || (doc._id as object).toString(),
+        sku: (doc.sku as string) || (doc._id as object).toString(),
+        _id: undefined,
+        __v: undefined,
+      } as unknown as Product;
+    }
+  } catch (err) {
+    console.warn("MongoDB fetch in getDbProductBySlug failed, using local store:", err);
+  }
+  return getProductBySlug(slug);
 }
 
 export function getProductsByCategory(category: ProductCategory): Product[] {
@@ -101,18 +163,24 @@ export function addProduct(newProductData: Omit<Product, "id" | "slug"> & { id?:
 
 export function updateProduct(id: string, updates: Partial<Product>): Product | null {
   const products = getAllProducts();
-  const index = products.findIndex((p) => p.id === id || p.slug === id);
+  const lowerId = id.toLowerCase().trim();
+  const index = products.findIndex(
+    (p) =>
+      p.id.toLowerCase().trim() === lowerId ||
+      (p.sku && p.sku.toLowerCase().trim() === lowerId) ||
+      p.slug.toLowerCase().trim() === lowerId
+  );
   if (index === -1) return null;
 
   const existing = products[index];
 
-  const newSku = updates.sku ? updates.sku.trim() : undefined;
+  const newSku = updates.sku ? updates.sku.trim().toUpperCase() : undefined;
   if (newSku) {
     const duplicate = products.find(
       (p) =>
         p.id !== existing.id &&
         ((p.sku && p.sku.toLowerCase() === newSku.toLowerCase()) ||
-         p.id.toLowerCase() === newSku.toLowerCase())
+          p.id.toLowerCase() === newSku.toLowerCase())
     );
     if (duplicate) {
       throw new Error(`Duplicate SKU: "${newSku}" is already assigned to "${duplicate.name}". Each product must have a unique SKU.`);
@@ -144,7 +212,13 @@ export function updateProduct(id: string, updates: Partial<Product>): Product | 
 
 export function deleteProduct(idOrSlug: string): boolean {
   const products = getAllProducts();
-  const filtered = products.filter((p) => p.id !== idOrSlug && p.slug !== idOrSlug);
+  const lower = idOrSlug.toLowerCase().trim();
+  const filtered = products.filter(
+    (p) =>
+      p.id.toLowerCase().trim() !== lower &&
+      (p.sku && p.sku.toLowerCase().trim() !== lower) &&
+      p.slug.toLowerCase().trim() !== lower
+  );
   if (filtered.length === products.length) return false;
 
   memoryStore = filtered;

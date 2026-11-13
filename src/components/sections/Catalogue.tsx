@@ -1,7 +1,7 @@
 "use client";
 
-import { PRODUCTS } from "@/data/products";
-import { useState } from "react";
+import { Product, PRODUCTS } from "@/data/products";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import ParallaxImage from "@/components/ui/ParallaxImage";
 
@@ -24,10 +24,22 @@ function WhatsAppIcon({ className = "w-4 h-4" }: { className?: string }) {
 
 export default function Catalogue() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setProducts(json.data);
+        }
+      })
+      .catch(() => { });
+  }, []);
 
   const filtered = activeFilter === "all"
-    ? PRODUCTS
-    : PRODUCTS.filter((p) => p.category === activeFilter);
+    ? products
+    : products.filter((p) => p.category === activeFilter);
 
   function buildWALink(productName: string, productId: string) {
     const msg = encodeURIComponent(
@@ -92,100 +104,100 @@ export default function Catalogue() {
                     className="w-full h-full"
                   />
                   {/* Fallback placeholder */}
-                    <div className="absolute inset-0 bg-[#E6DACB] flex items-center justify-center -z-10">
-                      <span className="text-[#C8782A] opacity-30">
-                        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-12 h-12" aria-hidden="true">
-                          <circle cx="24" cy="18" r="8" />
-                          <path d="M24 10 L24 2" />
-                          <path d="M24 34 L24 38" />
-                          <path d="M15 20 Q16 30 24 34 Q32 30 33 20" />
-                        </svg>
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex flex-col flex-1 p-5">
-                    {product.subcategory && (
-                      <span className="text-[10px] uppercase tracking-wider font-medium text-[#C8782A] mb-1.5">
-                        {product.subcategory}
-                      </span>
-                    )}
-                    <Link href={`/products/${product.slug}`}>
-                      <h3 className="text-[14px] font-medium leading-snug text-[#2A1810] hover:text-[#C8782A] transition-colors mb-1 line-clamp-2">
-                        {product.name}
-                      </h3>
-                    </Link>
-                    {product.tagline && (
-                      <p className="text-[12px] text-[#6b5f55] font-normal mb-3 line-clamp-1">{product.tagline}</p>
-                    )}
-
-                    {/* Key spec pills */}
-                    {(product.wattage || product.warranty || product.colourTemp) && (
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {product.wattage && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(42,24,16,0.06)] text-[#4A2C1A] border border-[rgba(42,24,16,0.08)]">
-                            {product.wattage}
-                          </span>
-                        )}
-                        {product.colourTemp && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(42,24,16,0.06)] text-[#4A2C1A] border border-[rgba(42,24,16,0.08)]">
-                            {product.colourTemp}
-                          </span>
-                        )}
-                        {product.warranty && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(200,120,42,0.1)] text-[#C8782A] border border-[rgba(200,120,42,0.2)]">
-                            {product.warranty}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Dual Action CTAs */}
-                    <div className="mt-auto pt-2 flex items-center gap-2">
-                      <Link
-                        href={`/products/${product.slug}`}
-                        className="btn-3d btn-3d-outline flex-1 py-2 px-3 text-[12px] font-medium text-center rounded-xl"
-                      >
-                        Specs
-                      </Link>
-                      <a
-                        href={buildWALink(product.name, product.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-3d btn-3d-dark py-2 px-3 text-[12px] font-medium gap-1.5 rounded-xl flex items-center justify-center"
-                        title="Enquire on WhatsApp"
-                      >
-                        <WhatsAppIcon className="w-3.5 h-3.5" />
-                        <span>Enquire</span>
-                      </a>
-                    </div>
+                  <div className="absolute inset-0 bg-[#E6DACB] flex items-center justify-center -z-10">
+                    <span className="text-[#C8782A] opacity-30">
+                      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-12 h-12" aria-hidden="true">
+                        <circle cx="24" cy="18" r="8" />
+                        <path d="M24 10 L24 2" />
+                        <path d="M24 34 L24 38" />
+                        <path d="M15 20 Q16 30 24 34 Q32 30 33 20" />
+                      </svg>
+                    </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* Bottom CTA */}
-          <div className="mt-12 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/products"
-              className="btn-3d btn-3d-dark px-7 py-3.5 text-sm"
-            >
-              Browse Full Catalogue (150+ Products) →
-            </Link>
-            <a
-              href="https://wa.me/919990179666?text=Hi%20Nivoseas%2C%20I%20am%20looking%20for%20a%20specific%20lighting%20product.%20Can%20you%20help%3F"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-3d btn-3d-outline px-7 py-3.5 text-sm gap-2.5 flex items-center"
-            >
-              <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
-              <span>Chat with us on WhatsApp</span>
-            </a>
-          </div>
+                {/* Info */}
+                <div className="flex flex-col flex-1 p-5">
+                  {product.subcategory && (
+                    <span className="text-[10px] uppercase tracking-wider font-medium text-[#C8782A] mb-1.5">
+                      {product.subcategory}
+                    </span>
+                  )}
+                  <Link href={`/products/${product.slug}`}>
+                    <h3 className="text-[14px] font-medium leading-snug text-[#2A1810] hover:text-[#C8782A] transition-colors mb-1 line-clamp-2">
+                      {product.name}
+                    </h3>
+                  </Link>
+                  {product.tagline && (
+                    <p className="text-[12px] text-[#6b5f55] font-normal mb-3 line-clamp-1">{product.tagline}</p>
+                  )}
 
-    </div>
+                  {/* Key spec pills */}
+                  {(product.wattage || product.warranty || product.colourTemp) && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {product.wattage && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(42,24,16,0.06)] text-[#4A2C1A] border border-[rgba(42,24,16,0.08)]">
+                          {product.wattage}
+                        </span>
+                      )}
+                      {product.colourTemp && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(42,24,16,0.06)] text-[#4A2C1A] border border-[rgba(42,24,16,0.08)]">
+                          {product.colourTemp}
+                        </span>
+                      )}
+                      {product.warranty && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(200,120,42,0.1)] text-[#C8782A] border border-[rgba(200,120,42,0.2)]">
+                          {product.warranty}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Dual Action CTAs */}
+                  <div className="mt-auto pt-2 flex items-center gap-2">
+                    <Link
+                      href={`/products/${product.slug}`}
+                      className="btn-3d btn-3d-outline flex-1 py-2 px-3 text-[12px] font-medium text-center rounded-xl"
+                    >
+                      Specs
+                    </Link>
+                    <a
+                      href={buildWALink(product.name, product.id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-3d btn-3d-dark py-2 px-3 text-[12px] font-medium gap-1.5 rounded-xl flex items-center justify-center"
+                      title="Enquire on WhatsApp"
+                    >
+                      <WhatsAppIcon className="w-3.5 h-3.5" />
+                      <span>Enquire</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="mt-12 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link
+            href="/products"
+            className="btn-3d btn-3d-dark px-7 py-3.5 text-sm"
+          >
+            Browse Full Catalogue (150+ Products) →
+          </Link>
+          <a
+            href="https://wa.me/919990179666?text=Hi%20Nivoseas%2C%20I%20am%20looking%20for%20a%20specific%20lighting%20product.%20Can%20you%20help%3F"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-3d btn-3d-outline px-7 py-3.5 text-sm gap-2.5 flex items-center"
+          >
+            <WhatsAppIcon className="w-4 h-4 text-[#25D366]" />
+            <span>Chat with us on WhatsApp</span>
+          </a>
+        </div>
+
+      </div>
     </section >
   );
 }

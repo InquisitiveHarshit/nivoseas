@@ -22,6 +22,19 @@ export default function Header() {
 
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setAllProducts(json.data);
+        }
+      })
+      .catch(() => { });
+  }, []);
+
   // Group products by category
   const productCategories: Record<
     string,
@@ -30,37 +43,37 @@ export default function Header() {
     decorative: {
       name: "Decorative Lights",
       slug: "decorative",
-      products: PRODUCTS.filter((p) => p.category === "decorative"),
+      products: allProducts.filter((p) => p.category === "decorative"),
     },
     "indoor-lighting": {
       name: "Indoor Lighting",
       slug: "indoor-lighting",
-      products: PRODUCTS.filter((p) => p.category === "indoor-lighting"),
+      products: allProducts.filter((p) => p.category === "indoor-lighting"),
     },
     "outdoor-gate": {
       name: "Outdoor & Gate Lights",
       slug: "outdoor-gate",
-      products: PRODUCTS.filter((p) => p.category === "outdoor-gate"),
+      products: allProducts.filter((p) => p.category === "outdoor-gate"),
     },
     commercial: {
       name: "Commercial Lighting",
       slug: "commercial",
-      products: PRODUCTS.filter((p) => p.category === "commercial"),
+      products: allProducts.filter((p) => p.category === "commercial"),
     },
     "architectural-led": {
       name: "Architectural LED",
       slug: "architectural-led",
-      products: PRODUCTS.filter((p) => p.category === "architectural-led"),
+      products: allProducts.filter((p) => p.category === "architectural-led"),
     },
     "led-fans": {
       name: "LED Ceiling Fans",
       slug: "led-fans",
-      products: PRODUCTS.filter((p) => p.category === "led-fans"),
+      products: allProducts.filter((p) => p.category === "led-fans"),
     },
     brands: {
       name: "Brands",
       slug: "brands",
-      products: PRODUCTS.filter((p) => p.category === "brands"),
+      products: allProducts.filter((p) => p.category === "brands"),
     },
   };
 
@@ -101,8 +114,8 @@ export default function Header() {
       {/* ── Sticky Rounded Header Island ── */}
       <header
         className={`fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2.5rem)] max-w-7xl transition-all duration-300 rounded-[20px] sm:rounded-[24px] ${isScrolled || activeDropdown
-            ? "bg-[#F3EDE4]/95 backdrop-blur-md shadow-xl shadow-[#2A1810]/10 border border-[#2A1810]/10"
-            : "bg-[#F3EDE4] shadow-md shadow-[#2A1810]/8 border border-[#2A1810]/8"
+          ? "bg-[#F3EDE4]/95 backdrop-blur-md shadow-xl shadow-[#2A1810]/10 border border-[#2A1810]/10"
+          : "bg-[#F3EDE4] shadow-md shadow-[#2A1810]/8 border border-[#2A1810]/8"
           }`}
       >
         <div className="px-4 sm:px-7 py-2.5 sm:py-3">
@@ -167,8 +180,8 @@ export default function Header() {
                   )}
                   <div
                     className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[2px] bg-[#C8782A] transition-transform duration-200 ${activeDropdown === "products"
-                        ? "scale-x-100"
-                        : "scale-x-0 group-hover:scale-x-100"
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
                       }`}
                   ></div>
                 </button>
@@ -194,8 +207,8 @@ export default function Header() {
                                 <button
                                   type="button"
                                   className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all duration-200 cursor-pointer flex items-center justify-between ${activeProductCategory === key
-                                      ? "bg-[#F3EDE4] text-[#C8782A] font-semibold border border-[#C8782A] shadow-xs"
-                                      : "text-[#2A1810] hover:bg-white hover:shadow-xs font-medium border border-transparent"
+                                    ? "bg-[#F3EDE4] text-[#C8782A] font-semibold border border-[#C8782A] shadow-xs"
+                                    : "text-[#2A1810] hover:bg-white hover:shadow-xs font-medium border border-transparent"
                                     }`}
                                   onMouseEnter={() => setActiveProductCategory(key)}
                                   onClick={() => {

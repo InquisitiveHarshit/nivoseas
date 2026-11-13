@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getAllProducts } from "@/lib/products-store";
+import { getDbProducts } from "@/lib/products-store";
 import ProductListingClient from "./ProductListingClient";
 
 export const metadata: Metadata = {
@@ -8,8 +8,8 @@ export const metadata: Metadata = {
     "Explore our complete range of handcrafted chandeliers, outdoor gate fixtures, architectural LED downlights, and ceiling fans. Based in Sector 104, Noida.",
 };
 
-export default function ProductsPage() {
-  const products = getAllProducts();
+export default async function ProductsPage() {
+  const products = await getDbProducts();
 
   return <ProductListingClient initialProducts={products} />;
 }
