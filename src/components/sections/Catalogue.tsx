@@ -1,9 +1,11 @@
 "use client";
 
-import { Product, PRODUCTS } from "@/data/products";
-import { useState, useEffect } from "react";
+import { Product } from "@/data/products";
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ParallaxImage from "@/components/ui/ParallaxImage";
+import { useProducts } from "@/context/ProductContext";
 
 const CATEGORIES_FILTER = [
   { id: "all", label: "All" },
@@ -23,23 +25,17 @@ function WhatsAppIcon({ className = "w-4 h-4" }: { className?: string }) {
 }
 
 export default function Catalogue() {
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState("all");
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-
-  useEffect(() => {
-    fetch("/api/products")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setProducts(json.data);
-        }
-      })
-      .catch(() => { });
-  }, []);
+  const { products } = useProducts();
 
   const filtered = activeFilter === "all"
     ? products
-    : products.filter((p) => p.category === activeFilter);
+    : products.filter((p) =>
+      p.categories && p.categories.length > 0
+        ? p.categories.includes(activeFilter as any)
+        : p.category === activeFilter
+    );
 
   function buildWALink(productName: string, productId: string) {
     const msg = encodeURIComponent(
@@ -84,23 +80,32 @@ export default function Catalogue() {
           </div>
         </div>
 
-        {/* Product Grid — asymmetric, varied card heights */}
+        {/* Product Grid — uniform, clean luxury cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((product, i) => {
-            const isWide = i % 7 === 0; // Every 7th card is wider
+          {filtered.map((product) => {
             return (
               <div
                 key={product.id}
-                className={`group relative flex flex-col rounded-[28px] border border-[rgba(42,24,16,0.08)] hover:border-[rgba(42,24,16,0.2)] bg-white overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/08 ${isWide ? "sm:col-span-2" : ""}`}
+                onClick={(e) => {
+                  // If clicking the WhatsApp enquire button, do not navigate
+                  if ((e.target as HTMLElement).closest("a[href*='wa.me']")) return;
+                  router.push(`/products/${product.slug}`);
+                }}
+                className="group relative flex flex-col rounded-[28px] border border-[rgba(42,24,16,0.08)] hover:border-[rgba(42,24,16,0.2)] bg-white overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/08 cursor-pointer"
               >
-                {/* Image area with smooth scroll parallax */}
-                <div className="card-img-mask relative overflow-hidden rounded-[28px] rounded-b-none">
+                {/* Image area — 4:5 full-bleed luxury portrait frame */}
+                <Link
+                  href={`/products/${product.slug}`}
+                  className="card-img-mask relative block overflow-hidden rounded-[24px] rounded-b-none bg-[#E6DACB]/30"
+                >
                   <ParallaxImage
                     src={product.images[0]}
                     alt={product.name}
-                    aspectRatio={isWide ? "2.2/1" : "1/1"}
-                    speed={16}
-                    scale={1.12}
+                    aspectRatio="4/5"
+                    speed={10}
+                    scale={1.05}
+                    objectFit="cover"
+                    objectPosition="center 40%"
                     className="w-full h-full"
                   />
                   {/* Fallback placeholder */}
@@ -114,7 +119,7 @@ export default function Catalogue() {
                       </svg>
                     </span>
                   </div>
-                </div>
+                </Link>
 
                 {/* Info */}
                 <div className="flex flex-col flex-1 p-5">

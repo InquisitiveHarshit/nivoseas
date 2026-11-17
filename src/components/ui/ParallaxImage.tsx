@@ -10,6 +10,8 @@ interface ParallaxImageProps {
   aspectRatio?: string;
   speed?: number; // parallax travel intensity, e.g. 24px
   scale?: number;
+  objectFit?: "cover" | "contain";
+  objectPosition?: string;
 }
 
 export default function ParallaxImage({
@@ -17,9 +19,11 @@ export default function ParallaxImage({
   alt,
   className = "",
   imgClassName = "",
-  aspectRatio = "1/1",
-  speed = 28,
-  scale = 1.14,
+  aspectRatio = "4/5",
+  speed = 16,
+  scale = 1.05,
+  objectFit = "cover",
+  objectPosition = "center 40%",
 }: ParallaxImageProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [offsetY, setOffsetY] = useState(0);
@@ -70,8 +74,10 @@ export default function ParallaxImage({
         src={src}
         alt={alt}
         loading="lazy"
-        className={`absolute inset-0 w-full h-full object-cover will-change-transform transition-transform duration-300 ease-out group-hover:scale-[1.05] ${imgClassName}`}
+        className={`absolute inset-0 w-full h-full will-change-transform transition-transform duration-300 ease-out group-hover:scale-[1.05] ${imgClassName}`}
         style={{
+          objectFit,
+          objectPosition,
           transform: `scale(${scale}) translate3d(0, ${offsetY}px, 0)`,
         }}
         onError={(e) => {
@@ -81,4 +87,3 @@ export default function ParallaxImage({
     </div>
   );
 }
-

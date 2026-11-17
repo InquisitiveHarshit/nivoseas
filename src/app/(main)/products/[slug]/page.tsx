@@ -1,21 +1,16 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getProductBySlug, getAllProducts, getDbProductBySlug, getDbProducts } from "@/lib/products-store";
+import { connection } from "next/server";
+import { getDbProductBySlug, getDbProducts } from "@/lib/products-store";
 import ProductDetailView from "./ProductDetailView";
-
-export function generateStaticParams() {
-  const products = getAllProducts();
-  return products.map((p) => ({
-    slug: p.slug,
-  }));
-}
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  await connection();
   const { slug } = await params;
   const product = await getDbProductBySlug(slug);
 
@@ -43,6 +38,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
  * Fetches fresh product details directly from MongoDB Atlas.
  */
 async function ProductDetails({ params }: { params: Promise<{ slug: string }> }) {
+  await connection();
   const { slug } = await params;
   const product = await getDbProductBySlug(slug);
 

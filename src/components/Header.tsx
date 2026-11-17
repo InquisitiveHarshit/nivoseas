@@ -11,6 +11,7 @@ import {
   FiPhone,
 } from "react-icons/fi";
 import { PRODUCTS, Product } from "@/data/products";
+import { useProducts } from "@/context/ProductContext";
 
 export default function Header() {
   const router = useRouter();
@@ -22,20 +23,14 @@ export default function Header() {
 
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
-
-  useEffect(() => {
-    fetch("/api/products")
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          setAllProducts(json.data);
-        }
-      })
-      .catch(() => { });
-  }, []);
+  const { products: allProducts } = useProducts();
 
   // Group products by category
+  const matchCat = (p: Product, catId: string) =>
+    p.categories && p.categories.length > 0
+      ? p.categories.includes(catId as any)
+      : p.category === catId;
+
   const productCategories: Record<
     string,
     { name: string; slug: string; products: Product[] }
@@ -43,37 +38,37 @@ export default function Header() {
     decorative: {
       name: "Decorative Lights",
       slug: "decorative",
-      products: allProducts.filter((p) => p.category === "decorative"),
+      products: allProducts.filter((p) => matchCat(p, "decorative")),
     },
     "indoor-lighting": {
       name: "Indoor Lighting",
       slug: "indoor-lighting",
-      products: allProducts.filter((p) => p.category === "indoor-lighting"),
+      products: allProducts.filter((p) => matchCat(p, "indoor-lighting")),
     },
     "outdoor-gate": {
       name: "Outdoor & Gate Lights",
       slug: "outdoor-gate",
-      products: allProducts.filter((p) => p.category === "outdoor-gate"),
+      products: allProducts.filter((p) => matchCat(p, "outdoor-gate")),
     },
     commercial: {
       name: "Commercial Lighting",
       slug: "commercial",
-      products: allProducts.filter((p) => p.category === "commercial"),
+      products: allProducts.filter((p) => matchCat(p, "commercial")),
     },
     "architectural-led": {
       name: "Architectural LED",
       slug: "architectural-led",
-      products: allProducts.filter((p) => p.category === "architectural-led"),
+      products: allProducts.filter((p) => matchCat(p, "architectural-led")),
     },
     "led-fans": {
       name: "LED Ceiling Fans",
       slug: "led-fans",
-      products: allProducts.filter((p) => p.category === "led-fans"),
+      products: allProducts.filter((p) => matchCat(p, "led-fans")),
     },
     brands: {
       name: "Brands",
       slug: "brands",
-      products: allProducts.filter((p) => p.category === "brands"),
+      products: allProducts.filter((p) => matchCat(p, "brands")),
     },
   };
 

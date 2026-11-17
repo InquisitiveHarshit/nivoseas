@@ -13,6 +13,7 @@ export interface IProduct extends Document {
   name: string;
   slug: string;
   category: string;
+  categories?: string[];
   subcategory?: string;
   tagline?: string;
   description?: string;
@@ -43,6 +44,7 @@ const ProductSchema = new Schema<IProduct>(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     category: { type: String, required: true, trim: true },
+    categories: [{ type: String, trim: true }],
     subcategory: { type: String, trim: true },
     tagline: { type: String },
     description: { type: String },
@@ -83,6 +85,7 @@ const ProductSchema = new Schema<IProduct>(
 
 // Indexes for fast querying (sku and slug indexes are auto-created by unique: true on the fields)
 ProductSchema.index({ category: 1 });
+ProductSchema.index({ categories: 1 });
 ProductSchema.index({ featured: -1, createdAt: -1 });
 
 const ProductModel: Model<IProduct> =

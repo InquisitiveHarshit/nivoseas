@@ -42,6 +42,7 @@ export interface Product {
   name: string;
   slug: string;
   category: ProductCategory;
+  categories?: ProductCategory[];
   subcategory?: string;
   tagline?: string;
   description?: string;
@@ -417,7 +418,15 @@ export function getProductBySlug(slug: string): Product | undefined {
   return PRODUCTS.find((p) => p.slug === slug);
 }
 
+export function productMatchesCategory(product: Product, category: string): boolean {
+  if (category === "all") return true;
+  if (product.categories && product.categories.length > 0) {
+    return product.categories.includes(category as ProductCategory);
+  }
+  return product.category === category;
+}
+
 export function getProductsByCategory(category: ProductCategory): Product[] {
-  return PRODUCTS.filter((p) => p.category === category);
+  return PRODUCTS.filter((p) => productMatchesCategory(p, category));
 }
 

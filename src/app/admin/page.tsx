@@ -111,6 +111,20 @@ export default function AdminPage() {
   const [sku, setSku] = useState("CHGM2749");
   const [name, setName] = useState("Luxury Rose Gold & Crystal Chandelier (CHGM2749)");
   const [category, setCategory] = useState<ProductCategory>("decorative");
+  const [categories, setCategories] = useState<ProductCategory[]>(["decorative"]);
+
+  const toggleCategory = (catId: ProductCategory) => {
+    setCategories((prev) => {
+      if (prev.includes(catId)) {
+        if (prev.length <= 1) return prev; // must keep at least 1 category selected
+        const updated = prev.filter((c) => c !== catId);
+        setCategory(updated[0]);
+        return updated;
+      } else {
+        return [...prev, catId];
+      }
+    });
+  };
   const [subcategory, setSubcategory] = useState("Chandelier");
   const [tagline, setTagline] = useState("Handcrafted rose gold and clear crystal tiers with 12-bulb refractive illumination.");
   const [description, setDescription] = useState(
@@ -241,7 +255,11 @@ export default function AdminPage() {
     setEditingId(p.id);
     setSku(p.sku || p.id);
     setName(p.name);
-    setCategory(p.category);
+    const itemCats: ProductCategory[] = p.categories && p.categories.length > 0
+      ? (p.categories as ProductCategory[])
+      : [p.category];
+    setCategories(itemCats);
+    setCategory(itemCats[0] || p.category);
     setSubcategory(p.subcategory || "");
     setTagline(p.tagline || "");
     setDescription(p.description || "");
@@ -307,6 +325,8 @@ export default function AdminPage() {
     setEditingId(null);
     setSku("");
     setName("");
+    setCategories(["decorative"]);
+    setCategory("decorative");
     setTagline("");
     setDescription("");
     setFeaturesText("");
@@ -428,11 +448,15 @@ export default function AdminPage() {
     const isIndoor = suggestiveUsageVal.toLowerCase().includes("indoor");
     const derivedUsage = isIndoor && isOutdoor ? "both" : isOutdoor ? "outdoor" : "indoor";
 
+    const finalCategories = categories.length > 0 ? categories : [category];
+    const primaryCategory = finalCategories[0];
+
     const payload = {
       ...(editingId ? { id: editingId } : {}),
       sku: trimmedSku,
       name: name.trim(),
-      category,
+      category: primaryCategory,
+      categories: finalCategories,
       subcategory: subcategory.trim() || undefined,
       tagline: tagline.trim() || undefined,
       description: description.trim() || undefined,
@@ -505,7 +529,11 @@ export default function AdminPage() {
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const matchesCat = categoryFilter === "all" || p.category === categoryFilter;
+      const matchesCat =
+        categoryFilter === "all" ||
+        (p.categories && p.categories.length > 0
+          ? p.categories.includes(categoryFilter as any)
+          : p.category === categoryFilter);
       const q = search.toLowerCase();
       const matchesSearch =
         !q ||
@@ -522,7 +550,12 @@ export default function AdminPage() {
 
   const stats = useMemo(() => {
     const total = products.length;
-    const byCat = (id: string) => products.filter((p) => p.category === id).length;
+    const byCat = (id: string) =>
+      products.filter((p) =>
+        p.categories && p.categories.length > 0
+          ? p.categories.includes(id as any)
+          : p.category === id
+      ).length;
     return {
       total,
       decorative: byCat("decorative"),
@@ -813,928 +846,973 @@ export default function AdminPage() {
             </div>
 
             {/* Filter Bar */}
-                <div className="bg-white p-4 rounded-2xl border border-[#2A1810]/10 shadow-xs space-y-3">
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    {/* Search Input */}
-                    <div className="relative flex-1 max-w-lg">
-                      <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2A1810]/40 text-sm" />
-                      <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by fixture name, SKU, wattage, or material..."
-                        className="w-full pl-9 pr-8 py-2 bg-[#F6F2EC]/60 border border-[#2A1810]/12 rounded-xl text-xs text-[#2A1810] placeholder-[#2A1810]/40 focus:outline-none focus:border-[#C8782A] focus:bg-white transition-all"
-                      />
-                      {search && (
-                        <button
-                          type="button"
-                          onClick={() => setSearch("")}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#2A1810]/40 hover:text-[#2A1810] text-xs p-1 cursor-pointer"
-                          title="Clear search"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
+            <div className="bg-white p-4 rounded-2xl border border-[#2A1810]/10 shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1 max-w-lg">
+                  <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2A1810]/40 text-sm" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search by fixture name, SKU, wattage, or material..."
+                    className="w-full pl-9 pr-8 py-2 bg-[#F6F2EC]/60 border border-[#2A1810]/12 rounded-xl text-xs text-[#2A1810] placeholder-[#2A1810]/40 focus:outline-none focus:border-[#C8782A] focus:bg-white transition-all"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#2A1810]/40 hover:text-[#2A1810] text-xs p-1 cursor-pointer"
+                      title="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
 
-                    {/* Category Dropdown (Compact & Clean) */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <label className="text-[11px] font-semibold text-[#4A2C1A]/70 uppercase tracking-wider">
-                        Category:
-                      </label>
-                      <select
-                        value={categoryFilter}
-                        onChange={(e) => setCategoryFilter(e.target.value)}
-                        className="px-3.5 py-2 bg-[#F6F2EC]/80 border border-[#2A1810]/15 rounded-xl text-xs font-semibold text-[#2A1810] focus:outline-none focus:border-[#C8782A] cursor-pointer"
-                      >
-                        <option value="all">All Categories ({products.length})</option>
-                        {CATEGORIES.map((cat) => {
-                          const count = products.filter((p) => p.category === cat.id).length;
-                          return (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.icon} {cat.name} ({count})
-                            </option>
-                          );
-                        })}
-                      </select>
+                {/* Category Dropdown (Compact & Clean) */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <label className="text-[11px] font-semibold text-[#4A2C1A]/70 uppercase tracking-wider">
+                    Category:
+                  </label>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="px-3.5 py-2 bg-[#F6F2EC]/80 border border-[#2A1810]/15 rounded-xl text-xs font-semibold text-[#2A1810] focus:outline-none focus:border-[#C8782A] cursor-pointer"
+                  >
+                    <option value="all">All Categories ({products.length})</option>
+                    {CATEGORIES.map((cat) => {
+                      const count = products.filter((p) =>
+                        p.categories && p.categories.length > 0
+                          ? p.categories.includes(cat.id as any)
+                          : p.category === cat.id
+                      ).length;
+                      return (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name} ({count})
+                        </option>
+                      );
+                    })}
+                  </select>
 
-                      <span className="text-[11px] font-mono text-[#4A2C1A]/60 bg-[#F6F2EC] px-2.5 py-1.5 rounded-lg border border-[#2A1810]/8 hidden sm:inline-block">
-                        {filteredProducts.length} fixture(s)
-                      </span>
-                    </div>
-                  </div>
+                  <span className="text-[11px] font-mono text-[#4A2C1A]/60 bg-[#F6F2EC] px-2.5 py-1.5 rounded-lg border border-[#2A1810]/8 hidden sm:inline-block">
+                    {filteredProducts.length} fixture(s)
+                  </span>
+                </div>
+              </div>
 
-                    {/* Horizontal Pills row with proper spacing, icons & count badges */}
-                    <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-0.5 border-t border-[#2A1810]/6">
-                      <button
-                        type="button"
-                        onClick={() => setCategoryFilter("all")}
-                        className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-medium cursor-pointer flex items-center gap-1.5 shrink-0 ${categoryFilter === "all"
-                            ? "bg-[#2A1810] text-[#F3EDE4] shadow-xs"
-                            : "bg-[#F6F2EC] text-[#4A2C1A] hover:bg-[#2A1810]/10 border border-[#2A1810]/8"
+              {/* Horizontal Pills row with proper spacing, icons & count badges */}
+              <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-0.5 border-t border-[#2A1810]/6">
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilter("all")}
+                  className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-medium cursor-pointer flex items-center gap-1.5 shrink-0 ${categoryFilter === "all"
+                    ? "bg-[#2A1810] text-[#F3EDE4] shadow-xs"
+                    : "bg-[#F6F2EC] text-[#4A2C1A] hover:bg-[#2A1810]/10 border border-[#2A1810]/8"
+                    }`}
+                >
+                  <span>All Fixtures</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${categoryFilter === "all"
+                      ? "bg-white/20 text-white"
+                      : "bg-[#2A1810]/10 text-[#4A2C1A]"
+                      }`}
+                  >
+                    {products.length}
+                  </span>
+                </button>
+
+                {CATEGORIES.map((cat) => {
+                  const count = products.filter((p) =>
+                    p.categories && p.categories.length > 0
+                      ? p.categories.includes(cat.id as any)
+                      : p.category === cat.id
+                  ).length;
+                  const isSelected = categoryFilter === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategoryFilter(cat.id)}
+                      className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-medium cursor-pointer flex items-center gap-1.5 shrink-0 ${isSelected
+                        ? "bg-[#C8782A] text-white shadow-xs shadow-[#C8782A]/20"
+                        : "bg-[#F6F2EC] text-[#4A2C1A] hover:bg-[#2A1810]/10 border border-[#2A1810]/8"
+                        }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected
+                          ? "bg-white/25 text-white"
+                          : "bg-[#2A1810]/10 text-[#4A2C1A]"
                           }`}
                       >
-                        <span>All Fixtures</span>
-                        <span
-                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${categoryFilter === "all"
-                              ? "bg-white/20 text-white"
-                              : "bg-[#2A1810]/10 text-[#4A2C1A]"
-                            }`}
-                        >
-                          {products.length}
-                        </span>
-                      </button>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                      {CATEGORIES.map((cat) => {
-                        const count = products.filter((p) => p.category === cat.id).length;
-                        const isSelected = categoryFilter === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setCategoryFilter(cat.id)}
-                            className={`text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all font-medium cursor-pointer flex items-center gap-1.5 shrink-0 ${isSelected
-                                ? "bg-[#C8782A] text-white shadow-xs shadow-[#C8782A]/20"
-                                : "bg-[#F6F2EC] text-[#4A2C1A] hover:bg-[#2A1810]/10 border border-[#2A1810]/8"
-                              }`}
-                          >
-                            <span>{cat.icon}</span>
-                            <span>{cat.name}</span>
-                            <span
-                              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isSelected
-                                  ? "bg-white/25 text-white"
-                                  : "bg-[#2A1810]/10 text-[#4A2C1A]"
-                                }`}
+            {/* Inventory Table */}
+            <div className="bg-white rounded-3xl border border-[#2A1810]/10 shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#2A1810]/5 border-b border-[#2A1810]/10 text-[#4A2C1A]/80 uppercase tracking-wider text-[10px] font-semibold">
+                      <th className="py-3.5 px-5">Fixture</th>
+                      <th className="py-3.5 px-4">SKU</th>
+                      <th className="py-3.5 px-4">Category</th>
+                      <th className="py-3.5 px-4">Gallery</th>
+                      <th className="py-3.5 px-4">Specifications</th>
+                      <th className="py-3.5 px-4">Environment</th>
+                      <th className="py-3.5 px-5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#2A1810]/5">
+                    {filteredProducts.map((p) => (
+                      <tr key={p.id} className="hover:bg-[#F6F2EC]/40 transition-colors group cursor-pointer" onClick={() => setSelectedProduct(p)}>
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#2A1810]/5 shrink-0 border border-[#2A1810]/8">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={p.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={p.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-[#2A1810] group-hover:text-[#C8782A] line-clamp-1">{p.name}</div>
+                              <div className="text-[10px] text-[#4A2C1A]/60 font-mono">ID: {p.id}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* ── Inline SKU Cell ── */}
+                        <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                          {inlineSkuEdit?.id === p.id ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={inlineSkuEdit.value}
+                                onChange={(e) => setInlineSkuEdit({ id: p.id, value: e.target.value.toUpperCase() })}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleInlineSkuSave(p.id);
+                                  if (e.key === "Escape") setInlineSkuEdit(null);
+                                }}
+                                className="w-28 px-2 py-1 border border-[#C8782A] rounded-lg text-[11px] font-mono font-bold text-[#2A1810] focus:outline-none bg-white"
+                              />
+                              <button
+                                onClick={() => handleInlineSkuSave(p.id)}
+                                className="text-emerald-600 hover:text-emerald-800 text-[11px] font-semibold"
+                                title="Save"
+                              >✓</button>
+                              <button
+                                onClick={() => setInlineSkuEdit(null)}
+                                className="text-[#4A2C1A]/50 hover:text-red-500 text-[11px]"
+                                title="Cancel"
+                              >✕</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setInlineSkuEdit({ id: p.id, value: p.sku || p.id })}
+                              className="group/sku flex items-center gap-1.5 cursor-pointer"
+                              title="Click to edit SKU"
                             >
-                              {count}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                              <span className="px-2 py-0.5 rounded-md bg-[#2A1810]/5 text-[#2A1810] font-mono font-bold text-[11px] border border-transparent group-hover/sku:border-[#C8782A]/40 group-hover/sku:bg-[#C8782A]/5 transition-all">
+                                {p.sku || p.id}
+                              </span>
+                              <FiEdit2 className="text-[10px] text-[#2A1810]/30 group-hover/sku:text-[#C8782A] transition-colors" />
+                            </button>
+                          )}
+                        </td>
 
-                  {/* Inventory Table */}
-                  <div className="bg-white rounded-3xl border border-[#2A1810]/10 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-[#2A1810]/5 border-b border-[#2A1810]/10 text-[#4A2C1A]/80 uppercase tracking-wider text-[10px] font-semibold">
-                            <th className="py-3.5 px-5">Fixture</th>
-                            <th className="py-3.5 px-4">SKU</th>
-                            <th className="py-3.5 px-4">Category</th>
-                            <th className="py-3.5 px-4">Gallery</th>
-                            <th className="py-3.5 px-4">Specifications</th>
-                            <th className="py-3.5 px-4">Environment</th>
-                            <th className="py-3.5 px-5 text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#2A1810]/5">
-                          {filteredProducts.map((p) => (
-                            <tr key={p.id} className="hover:bg-[#F6F2EC]/40 transition-colors group cursor-pointer" onClick={() => setSelectedProduct(p)}>
-                              <td className="py-3.5 px-5">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-[#2A1810]/5 shrink-0 border border-[#2A1810]/8">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={p.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={p.name} className="w-full h-full object-cover" />
-                                  </div>
-                                  <div>
-                                    <div className="font-semibold text-[#2A1810] group-hover:text-[#C8782A] line-clamp-1">{p.name}</div>
-                                    <div className="text-[10px] text-[#4A2C1A]/60 font-mono">ID: {p.id}</div>
-                                  </div>
-                                </div>
-                              </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {(p.categories && p.categories.length > 0 ? p.categories : [p.category]).map((cId) => {
+                              const meta = CATEGORIES.find((c) => c.id === cId);
+                              return (
+                                <span
+                                  key={cId}
+                                  className="px-2 py-0.5 rounded-md bg-[#2A1810]/5 text-[#2A1810] font-medium text-[10.5px] whitespace-nowrap flex items-center gap-1 border border-[#2A1810]/8"
+                                >
+                                  <span>{meta?.icon || "💡"}</span>
+                                  <span>{meta?.name || cId.replace("-", " ")}</span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                          {p.subcategory && (
+                            <div className="text-[10px] text-[#4A2C1A]/50 mt-1 font-mono">{p.subcategory}</div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2 py-0.5 rounded-full bg-[#C8782A]/10 text-[#C8782A] font-semibold text-[11px]">
+                            {p.images?.length || 1} photo(s)
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="font-mono text-[#C8782A] font-bold text-[11px]">{p.wattage}</div>
+                          <div className="text-[#4A2C1A]/70 text-[11px] line-clamp-1">{p.material}</div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-emerald-100 text-emerald-800">
+                            {p.usage || "Indoor"}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => startEditing(p)}
+                              title="Edit product specifications & gallery"
+                              className="px-2.5 py-1 rounded-lg bg-[#C8782A]/10 text-[#C8782A] hover:bg-[#C8782A] hover:text-white transition-colors flex items-center gap-1 font-medium text-[11px]"
+                            >
+                              <FiEdit2 className="text-xs" /> Edit
+                            </button>
+                            <Link href={`/ products / ${p.slug} `} target="_blank" className="p-1.5 rounded-lg text-[#4A2C1A]/70 hover:text-[#2A1810]" title="View live page">
+                              <FiExternalLink className="text-sm" />
+                            </Link>
+                            <button onClick={() => handleDeleteProduct(p.id, p.name)} className="p-1.5 rounded-lg text-red-500 hover:text-red-700" title="Delete">
+                              <FiTrash2 className="text-sm" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
-                              {/* ── Inline SKU Cell ── */}
-                              <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                                {inlineSkuEdit?.id === p.id ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <input
-                                      autoFocus
-                                      type="text"
-                                      value={inlineSkuEdit.value}
-                                      onChange={(e) => setInlineSkuEdit({ id: p.id, value: e.target.value.toUpperCase() })}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleInlineSkuSave(p.id);
-                                        if (e.key === "Escape") setInlineSkuEdit(null);
-                                      }}
-                                      className="w-28 px-2 py-1 border border-[#C8782A] rounded-lg text-[11px] font-mono font-bold text-[#2A1810] focus:outline-none bg-white"
-                                    />
-                                    <button
-                                      onClick={() => handleInlineSkuSave(p.id)}
-                                      className="text-emerald-600 hover:text-emerald-800 text-[11px] font-semibold"
-                                      title="Save"
-                                    >✓</button>
-                                    <button
-                                      onClick={() => setInlineSkuEdit(null)}
-                                      className="text-[#4A2C1A]/50 hover:text-red-500 text-[11px]"
-                                      title="Cancel"
-                                    >✕</button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => setInlineSkuEdit({ id: p.id, value: p.sku || p.id })}
-                                    className="group/sku flex items-center gap-1.5 cursor-pointer"
-                                    title="Click to edit SKU"
-                                  >
-                                    <span className="px-2 py-0.5 rounded-md bg-[#2A1810]/5 text-[#2A1810] font-mono font-bold text-[11px] border border-transparent group-hover/sku:border-[#C8782A]/40 group-hover/sku:bg-[#C8782A]/5 transition-all">
-                                      {p.sku || p.id}
-                                    </span>
-                                    <FiEdit2 className="text-[10px] text-[#2A1810]/30 group-hover/sku:text-[#C8782A] transition-colors" />
-                                  </button>
-                                )}
-                              </td>
-
-                              <td className="py-3.5 px-4">
-                                <span className="px-2.5 py-1 rounded-full bg-[#2A1810]/5 text-[#2A1810] font-medium text-[11px] capitalize">
-                                  {p.subcategory || p.category.replace("-", " ")}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className="px-2 py-0.5 rounded-full bg-[#C8782A]/10 text-[#C8782A] font-semibold text-[11px]">
-                                  {p.images?.length || 1} photo(s)
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <div className="font-mono text-[#C8782A] font-bold text-[11px]">{p.wattage}</div>
-                                <div className="text-[#4A2C1A]/70 text-[11px] line-clamp-1">{p.material}</div>
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold bg-emerald-100 text-emerald-800">
-                                  {p.usage || "Indoor"}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-5 text-right" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    onClick={() => startEditing(p)}
-                                    title="Edit product specifications & gallery"
-                                    className="px-2.5 py-1 rounded-lg bg-[#C8782A]/10 text-[#C8782A] hover:bg-[#C8782A] hover:text-white transition-colors flex items-center gap-1 font-medium text-[11px]"
-                                  >
-                                    <FiEdit2 className="text-xs" /> Edit
-                                  </button>
-                                  <Link href={`/ products / ${p.slug} `} target="_blank" className="p-1.5 rounded-lg text-[#4A2C1A]/70 hover:text-[#2A1810]" title="View live page">
-                                    <FiExternalLink className="text-sm" />
-                                  </Link>
-                                  <button onClick={() => handleDeleteProduct(p.id, p.name)} className="p-1.5 rounded-lg text-red-500 hover:text-red-700" title="Delete">
-                                    <FiTrash2 className="text-sm" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+        {/* View: Add OR Edit Luminaire */}
+        {activeView === "add" && (
+          <div className="p-6 lg:p-10 space-y-6 max-w-7xl">
+            {/* Header with Edit badge if editing */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">
+                    {editingId ? "Edit Luminaire Specifications" : "Add New Luminaire"}
+                  </h1>
+                  {editingId && (
+                    <span className="px-2.5 py-1 bg-[#C8782A] text-white text-[10px] font-bold uppercase rounded-full shadow">
+                      Editing Mode
+                    </span>
+                  )}
                 </div>
-                )}
+                <p className="text-xs text-[#4A2C1A]/70 mt-0.5">
+                  {editingId
+                    ? "Updating live specifications and 5-photo gallery for this catalogue piece."
+                    : "Create a new fixture specification with 5-photo gallery that appears live across the catalogue."}
+                </p>
+              </div>
 
-                {/* View: Add OR Edit Luminaire */}
-                {activeView === "add" && (
-                  <div className="p-6 lg:p-10 space-y-6 max-w-7xl">
-                    {/* Header with Edit badge if editing */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Button to toggle live preview - hidden until user wants it */}
+                <button
+                  type="button"
+                  onClick={() => setShowLivePreview(!showLivePreview)}
+                  className={`btn-3d text-xs px-4 py-2 rounded-full flex items-center gap-2 font-medium transition-all cursor-pointer ${showLivePreview
+                    ? "btn-3d-dark text-[#F3EDE4]"
+                    : "btn-3d-white text-[#2A1810]"
+                    }`}
+                >
+                  {showLivePreview ? <FiEyeOff className="text-xs text-[#C8782A]" /> : <FiEye className="text-xs text-[#C8782A]" />}
+                  <span>{showLivePreview ? "Hide Card Preview" : "Show Live Card Preview"}</span>
+                </button>
+
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="btn-3d btn-3d-outline text-xs px-4 py-2 rounded-full flex items-center gap-2"
+                  >
+                    <FiX /> Cancel Edit
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className={`grid grid-cols-1 ${showLivePreview ? "lg:grid-cols-12" : "max-w-5xl mx-auto"} gap-8 items-start`}>
+              <form onSubmit={handleSubmit} className={`${showLivePreview ? "lg:col-span-7" : "w-full"} bg-white rounded-3xl p-6 sm:p-8 border border-[#2A1810]/10 shadow-sm space-y-6`}>
+
+                {/* 1. Identity & SKU */}
+                <div>
+                  <h3 className="text-xs uppercase tracking-wider font-semibold text-[#C8782A] mb-4">
+                    1. Identity & Classification
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* SKU / Model Number */}
                       <div>
-                        <div className="flex items-center gap-2.5">
-                          <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">
-                            {editingId ? "Edit Luminaire Specifications" : "Add New Luminaire"}
-                          </h1>
-                          {editingId && (
-                            <span className="px-2.5 py-1 bg-[#C8782A] text-white text-[10px] font-bold uppercase rounded-full shadow">
-                              Editing Mode
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-semibold text-[#2A1810]">
+                            SKU / Model Number *
+                          </label>
+                          {skuValidation.status === "ok" && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                              <FiCheckCircle className="text-xs" /> SKU OK
+                            </span>
+                          )}
+                          {skuValidation.status === "duplicate" && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md animate-pulse">
+                              <FiAlertCircle className="text-xs" /> Already Exists
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-[#4A2C1A]/70 mt-0.5">
-                          {editingId
-                            ? "Updating live specifications and 5-photo gallery for this catalogue piece."
-                            : "Create a new fixture specification with 5-photo gallery that appears live across the catalogue."}
-                        </p>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            required
+                            value={sku}
+                            onChange={(e) => setSku(e.target.value.toUpperCase())}
+                            placeholder="e.g. CHGM2749 or 626-500"
+                            className={`w-full px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all focus:outline-none ${skuValidation.status === "duplicate"
+                              ? "bg-rose-50/40 border-2 border-rose-500 text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
+                              : skuValidation.status === "ok"
+                                ? "bg-emerald-50/20 border border-emerald-500 text-[#2A1810] focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
+                                : "bg-[#F6F2EC]/40 border border-[#2A1810]/15 text-[#2A1810] focus:border-[#C8782A]"
+                              }`}
+                          />
+                        </div>
+                        {skuValidation.status === "duplicate" ? (
+                          <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-[11px] text-rose-700 font-medium flex items-start gap-1.5">
+                            <FiAlertCircle className="text-xs shrink-0 mt-0.5 text-rose-600" />
+                            <span>
+                              <strong>SKU already exists:</strong> &ldquo;{skuValidation.productName}&rdquo; is using this SKU. Provide a unique SKU before publishing.
+                            </span>
+                          </div>
+                        ) : skuValidation.status === "ok" ? (
+                          <div className="mt-1.5 p-1.5 rounded-lg bg-emerald-50/80 border border-emerald-200/80 text-[11px] text-emerald-800 font-medium flex items-center gap-1.5">
+                            <FiCheckCircle className="text-xs shrink-0 text-emerald-600" />
+                            <span>✓ SKU Available — verified OK to publish.</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-amber-700 mt-1 block">
+                            ⚠️ Please enter a unique SKU (e.g. CHGM2749, 626-500).
+                          </span>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        {/* Button to toggle live preview - hidden until user wants it */}
+                      {/* Luminaire Name */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">
+                          Luminaire Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="e.g. Luxury Rose Gold & Crystal Chandelier (CHGM2749)"
+                          className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                        />
+                      </div>
+                    </div>
+
+                        {/* Multi-Category Selector */}
+                        <div className="p-4 bg-[#F6F2EC]/60 border border-[#2A1810]/10 rounded-2xl">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
+                            <div>
+                              <label className="block text-xs font-semibold text-[#2A1810]">
+                                Categories * <span className="text-[11px] font-normal text-[#4A2C1A]/70">(Select one or more categories to cross-list this fixture)</span>
+                              </label>
+                            </div>
+                            <span className="text-[11px] font-mono text-[#C8782A] font-semibold">
+                              {categories.length} selected
+                            </span>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {CATEGORIES.map((cat) => {
+                              const isSelected = categories.includes(cat.id);
+                              return (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => toggleCategory(cat.id)}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${isSelected
+                                      ? "bg-[#C8782A] text-white shadow-xs font-semibold"
+                                      : "bg-white/80 text-[#2A1810] border border-[#2A1810]/15 hover:bg-white"
+                                    }`}
+                                >
+                                  <span>{cat.icon}</span>
+                                  <span>{cat.name}</span>
+                                  {isSelected && <span className="text-[10px] ml-0.5 font-bold">✓</span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Subcategory / Format</label>
+                            <input
+                              type="text"
+                              value={subcategory}
+                              onChange={(e) => setSubcategory(e.target.value)}
+                              placeholder="e.g. Chandelier, Thali, Pendant"
+                              className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Wattage / Lamp Rating</label>
+                            <input
+                              type="text"
+                              value={wattage}
+                              onChange={(e) => setWattage(e.target.value)}
+                              placeholder="e.g. 12 × E14 Bulbs (4-9W)"
+                              className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Minimum Order Qty (MOQ)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={moq}
+                              onChange={(e) => setMoq(e.target.value)}
+                              className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Architectural Tagline</label>
+                          <input
+                            type="text"
+                            value={tagline}
+                            onChange={(e) => setTagline(e.target.value)}
+                            placeholder="e.g. Handcrafted rose gold and clear crystal tiers with 12-bulb refractive illumination."
+                            className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Full Product Description</label>
+                          <textarea
+                            rows={3}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="An opulent statement chandelier combining precision-cut faceted crystals..."
+                            className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">
+                            Key Features & Bullets (One feature per line)
+                          </label>
+                          <textarea
+                            rows={4}
+                            value={featuresText}
+                            onChange={(e) => setFeaturesText(e.target.value)}
+                            placeholder="12-bulb E14 multi-tier refractive crystal lighting arrangement&#10;Adjustable suspension height from 52 inches up to 90 inches&#10;Handcrafted base in rose gold, deep black, and optical crystal&#10;Supports smooth dimming directly from the main electric supply"
+                            className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] font-mono focus:outline-none focus:border-[#C8782A]"
+                          />
+                          <span className="text-[11px] text-[#4A2C1A]/60 mt-1 block">Each line becomes a verified feature bullet with a checkmark on the product page.</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Technical Specifications (Collapsible Dropdown Table View) */}
+                    <div className="pt-4 border-t border-[#2A1810]/8 space-y-4">
+                      {/* Dropdown Header Trigger */}
+                      <button
+                        type="button"
+                        onClick={() => setIsSpecsDropdownOpen(!isSpecsDropdownOpen)}
+                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-[#F6F2EC]/80 hover:bg-[#F6F2EC] border border-[#2A1810]/12 transition-all cursor-pointer group text-left shadow-2xs"
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-8 h-8 rounded-xl bg-[#C8782A] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                            2
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-semibold text-[#2A1810] group-hover:text-[#C8782A] transition-colors">
+                                Technical Specifications
+                              </h3>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#C8782A]/10 text-[#C8782A] font-bold">
+                                {techSpecs.length} Rows Configured
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-[#4A2C1A]/70 mt-0.5">
+                              {isSpecsDropdownOpen
+                                ? "Click to collapse specifications table"
+                                : "Click dropdown to open full specifications table & reordering matrix"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 font-medium text-xs text-[#C8782A]">
+                          <span>{isSpecsDropdownOpen ? "Collapse Table" : "Open Table View"}</span>
+                          <div
+                            className={`w-7 h-7 rounded-lg bg-white border border-[#2A1810]/10 flex items-center justify-center transition-transform duration-200 ${isSpecsDropdownOpen ? "rotate-180" : ""
+                              }`}
+                          >
+                            <FiChevronDown className="text-sm text-[#2A1810]" />
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Dropdown Content: Structured HTML Table View */}
+                      {isSpecsDropdownOpen && (
+                        <div className="space-y-4 pt-1 animate-fadeIn">
+                          {/* Top Table Action Bar */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F6F2EC]/40 p-3.5 rounded-2xl border border-[#2A1810]/8">
+                            <div>
+                              <span className="text-xs font-semibold text-[#2A1810] block">
+                                Specification Matrix ({techSpecs.length} Active Rows)
+                              </span>
+                              <span className="text-[11px] text-[#4A2C1A]/70">
+                                Edit headings on the left, values on the right, and use ↑ ↓ to set display order.
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={addSpecRow}
+                                className="btn-3d btn-3d-dark text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 font-medium cursor-pointer"
+                              >
+                                <FiPlus className="text-xs" /> Add Specification Row
+                              </button>
+                              <button
+                                type="button"
+                                onClick={resetSpecRows}
+                                className="btn-3d btn-3d-white text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 font-medium text-[#4A2C1A] hover:text-[#C8782A] cursor-pointer"
+                                title="Restore standard 19-row luxury luminaire template"
+                              >
+                                <FiRotateCcw className="text-xs" /> Reset Template
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Real HTML Table View */}
+                          <div className="bg-white rounded-2xl border border-[#2A1810]/12 overflow-hidden shadow-xs">
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                  <tr className="bg-[#2A1810]/5 border-b border-[#2A1810]/10 text-[#4A2C1A]/80 uppercase tracking-wider text-[10px] font-semibold">
+                                    <th className="py-2.5 px-3 text-center w-[70px]">Order</th>
+                                    <th className="py-2.5 px-3 w-[35%]">Specification Heading (Left)</th>
+                                    <th className="py-2.5 px-3">Specification Value (Right)</th>
+                                    <th className="py-2.5 px-3 text-center w-[50px]">Remove</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#2A1810]/8">
+                                  {techSpecs.map((row, idx) => (
+                                    <tr key={row.id} className="hover:bg-[#F6F2EC]/40 transition-colors group">
+                                      {/* Order Controls */}
+                                      <td className="py-2 px-3 text-center align-middle">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <button
+                                            type="button"
+                                            disabled={idx === 0}
+                                            onClick={() => moveSpecRow(idx, "up")}
+                                            className="w-5 h-5 rounded hover:bg-[#2A1810]/10 flex items-center justify-center text-[10px] text-[#2A1810]/70 hover:text-[#C8782A] disabled:opacity-20 cursor-pointer"
+                                            title="Move Up in Table"
+                                          >
+                                            <FiArrowUp />
+                                          </button>
+                                          <span className="text-[10px] font-mono font-bold text-[#4A2C1A]/60 w-4 text-center">
+                                            {idx + 1}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            disabled={idx === techSpecs.length - 1}
+                                            onClick={() => moveSpecRow(idx, "down")}
+                                            className="w-5 h-5 rounded hover:bg-[#2A1810]/10 flex items-center justify-center text-[10px] text-[#2A1810]/70 hover:text-[#C8782A] disabled:opacity-20 cursor-pointer"
+                                            title="Move Down in Table"
+                                          >
+                                            <FiArrowDown />
+                                          </button>
+                                        </div>
+                                      </td>
+
+                                      {/* Left Heading Input */}
+                                      <td className="py-2 px-3 align-middle">
+                                        <input
+                                          type="text"
+                                          value={row.label}
+                                          onChange={(e) => updateSpecRow(idx, "label", e.target.value)}
+                                          placeholder="e.g. Base Material"
+                                          className="w-full px-2.5 py-1.5 bg-[#F6F2EC]/50 border border-[#2A1810]/15 rounded-lg text-xs font-semibold text-[#2A1810] focus:outline-none focus:border-[#C8782A] focus:bg-white"
+                                        />
+                                      </td>
+
+                                      {/* Right Value Input */}
+                                      <td className="py-2 px-3 align-middle">
+                                        <input
+                                          type="text"
+                                          value={row.value}
+                                          onChange={(e) => updateSpecRow(idx, "value", e.target.value)}
+                                          placeholder="e.g. Metal & Crystal"
+                                          className="w-full px-2.5 py-1.5 bg-white border border-[#2A1810]/15 rounded-lg text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                                        />
+                                      </td>
+
+                                      {/* Delete Row Button */}
+                                      <td className="py-2 px-3 text-center align-middle">
+                                        <button
+                                          type="button"
+                                          onClick={() => removeSpecRow(idx)}
+                                          className="w-6 h-6 rounded-md text-red-400 hover:text-red-700 hover:bg-red-50 flex items-center justify-center mx-auto transition-colors cursor-pointer"
+                                          title="Remove row"
+                                        >
+                                          <FiTrash2 className="text-xs" />
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 3. Dynamic Gallery Photography */}
+                    <div className="pt-4 border-t border-[#2A1810]/8 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-xs uppercase tracking-wider font-semibold text-[#C8782A]">
+                            3. Gallery Photography
+                          </h3>
+                          <p className="text-[11px] text-[#4A2C1A]/70 mt-0.5">
+                            Upload direct files or paste URLs. Dynamic slots: if 2 then 2, if 3 then 3, if 5 then 5.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-mono text-[#2A1810] font-semibold bg-[#F6F2EC] px-2.5 py-1 rounded-md border border-[#2A1810]/8">
+                            {galleryImages.filter((s) => s.trim().length > 0).length} of {galleryImages.length} Photo(s) Active
+                          </span>
+                          <button
+                            type="button"
+                            onClick={addImageSlot}
+                            className="btn-3d btn-3d-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium cursor-pointer"
+                          >
+                            <FiPlus className="text-xs" /> Add Photo Slot
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3.5">
+                        {
+                          galleryImages.map((imgVal, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3.5 rounded-2xl bg-[#F6F2EC]/50 border border-[#2A1810]/10 flex flex-col sm:flex-row items-start sm:items-center gap-3.5 group hover:border-[#C8782A]/30 transition-colors"
+                            >
+                              {/* Image preview thumbnail */}
+                              <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#2A1810]/10 relative flex items-center justify-center">
+                                {imgVal ? (
+                                  <>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={imgVal}
+                                      alt={`Slot ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "/Minimalist Luxury Chandelier Interior.webp";
+                                      }}
+                                    />
+                                    <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[9px] px-1 font-mono">
+                                      #{idx + 1}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <div className="text-center p-1 text-[#2A1810]/30">
+                                    <FiImage className="mx-auto text-base" />
+                                    <span className="text-[9px] block font-mono">#{idx + 1}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Inputs: URL + File Upload */}
+                              <div className="flex-1 w-full space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold text-[#2A1810]">
+                                    {idx === 0 ? "Photo 1 (Primary Catalogue Cover)" : `Photo ${idx + 1} (Gallery Angle)`}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    {imgVal && (
+                                      <button
+                                        type="button"
+                                        onClick={() => updateSlotImage(idx, "")}
+                                        className="text-[10px] text-amber-700 hover:text-amber-900 font-medium cursor-pointer"
+                                      >
+                                        Clear URL
+                                      </button>
+                                    )}
+                                    {galleryImages.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => removeImageSlot(idx)}
+                                        className="text-[10px] text-red-500 hover:text-red-700 font-medium flex items-center gap-0.5 cursor-pointer"
+                                        title="Remove this photo slot"
+                                      >
+                                        <FiTrash2 className="text-[10px]" /> Remove Slot
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={imgVal}
+                                    onChange={(e) => updateSlotImage(idx, e.target.value)}
+                                    placeholder="Paste image URL (https://...)"
+                                    className="flex-1 px-3 py-1.5 bg-white border border-[#2A1810]/15 rounded-lg text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                                  />
+
+                                  {/* Upload Button */}
+                                  <label className="btn-3d btn-3d-outline text-xs px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                                    <FiUploadCloud className="text-sm" />
+                                    <span>{uploadingSlot === idx ? "Uploading..." : "Upload File"}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      disabled={uploadingSlot === idx}
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleFileUpload(idx, file);
+                                      }}
+                                    />
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Bottom Add Photo Slot button */}
+                      <div className="pt-1 flex items-center justify-between">
                         <button
                           type="button"
-                          onClick={() => setShowLivePreview(!showLivePreview)}
-                          className={`btn-3d text-xs px-4 py-2 rounded-full flex items-center gap-2 font-medium transition-all cursor-pointer ${showLivePreview
-                            ? "btn-3d-dark text-[#F3EDE4]"
-                            : "btn-3d-white text-[#2A1810]"
-                            }`}
+                          onClick={addImageSlot}
+                          className="btn-3d btn-3d-white text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 font-medium cursor-pointer"
                         >
-                          {showLivePreview ? <FiEyeOff className="text-xs text-[#C8782A]" /> : <FiEye className="text-xs text-[#C8782A]" />}
-                          <span>{showLivePreview ? "Hide Card Preview" : "Show Live Card Preview"}</span>
+                          <FiPlus className="text-xs" /> Add Another Photo Slot
                         </button>
+                        <span className="text-[10px] text-[#4A2C1A]/60">
+                          {galleryImages.length} slot(s) currently open
+                        </span>
+                      </div>
 
-                        {editingId && (
+                      {/* Preset quick picker */}
+                      <div className="pt-2">
+                        <span className="text-[11px] text-[#4A2C1A]/70 block mb-1.5">Quick fill Slot 1 from presets:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {PRESET_IMAGES.map((preset) => (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() => updateSlotImage(0, preset.url)}
+                              className="text-[10px] px-2.5 py-1 rounded-lg border bg-white text-[#4A2C1A] border-[#2A1810]/10 hover:border-[#C8782A] transition-colors"
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Submit button */}
+                    < div className="pt-6 border-t border-[#2A1810]/8 flex items-center justify-between" >
+                      {
+                        editingId ? (
                           <button
                             type="button"
                             onClick={cancelEditing}
-                            className="btn-3d btn-3d-outline text-xs px-4 py-2 rounded-full flex items-center gap-2"
+                            className="text-xs text-[#4A2C1A]/80 hover:text-[#2A1810] font-medium"
                           >
-                            <FiX /> Cancel Edit
+                            ← Cancel and return to Inventory
                           </button>
-                        )}
-                      </div>
+                        ) : <div />}
+
+                      <button
+                        type="submit"
+                        disabled={submitting || skuValidation.status === "duplicate" || skuValidation.status === "empty"}
+                        className={`btn-3d text-xs px-7 py-3 rounded-full flex items-center gap-2 font-medium transition-all ${skuValidation.status === "duplicate"
+                          ? "bg-rose-900/60 text-white cursor-not-allowed opacity-60"
+                          : skuValidation.status === "empty"
+                            ? "bg-[#2A1810]/40 text-white cursor-not-allowed opacity-60"
+                            : "btn-3d-dark"
+                          }`}
+                      >
+                        {editingId ? <FiEdit2 className="text-sm" /> : <FiPlusCircle className="text-sm" />}
+                        <span>
+                          {submitting
+                            ? "Saving..."
+                            : skuValidation.status === "duplicate"
+                              ? "Cannot Publish: SKU Already Exists"
+                              : skuValidation.status === "empty"
+                                ? "Provide SKU to Publish"
+                                : editingId
+                                  ? "Save Changes"
+                                  : "Publish Luminaire"}
+                        </span>
+                      </button>
                     </div>
+                  </form>
 
-                    <div className={`grid grid-cols-1 ${showLivePreview ? "lg:grid-cols-12" : "max-w-5xl mx-auto"} gap-8 items-start`}>
-                      <form onSubmit={handleSubmit} className={`${showLivePreview ? "lg:col-span-7" : "w-full"} bg-white rounded-3xl p-6 sm:p-8 border border-[#2A1810]/10 shadow-sm space-y-6`}>
-
-                        {/* 1. Identity & SKU */}
-                        <div>
-                          <h3 className="text-xs uppercase tracking-wider font-semibold text-[#C8782A] mb-4">
-                            1. Identity & Classification
-                          </h3>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              {/* SKU / Model Number */}
-                              <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                  <label className="block text-xs font-semibold text-[#2A1810]">
-                                    SKU / Model Number *
-                                  </label>
-                                  {skuValidation.status === "ok" && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
-                                      <FiCheckCircle className="text-xs" /> SKU OK
-                                    </span>
-                                  )}
-                                  {skuValidation.status === "duplicate" && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md animate-pulse">
-                                      <FiAlertCircle className="text-xs" /> Already Exists
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="relative">
-                                  <input
-                                    type="text"
-                                    required
-                                    value={sku}
-                                    onChange={(e) => setSku(e.target.value.toUpperCase())}
-                                    placeholder="e.g. CHGM2749 or 626-500"
-                                    className={`w-full px-4 py-2.5 rounded-xl text-xs font-mono font-bold transition-all focus:outline-none ${skuValidation.status === "duplicate"
-                                        ? "bg-rose-50/40 border-2 border-rose-500 text-rose-900 focus:border-rose-600 focus:ring-2 focus:ring-rose-500/20"
-                                        : skuValidation.status === "ok"
-                                          ? "bg-emerald-50/20 border border-emerald-500 text-[#2A1810] focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20"
-                                          : "bg-[#F6F2EC]/40 border border-[#2A1810]/15 text-[#2A1810] focus:border-[#C8782A]"
-                                      }`}
-                                  />
-                                </div>
-                                {skuValidation.status === "duplicate" ? (
-                                  <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-[11px] text-rose-700 font-medium flex items-start gap-1.5">
-                                    <FiAlertCircle className="text-xs shrink-0 mt-0.5 text-rose-600" />
-                                    <span>
-                                      <strong>SKU already exists:</strong> &ldquo;{skuValidation.productName}&rdquo; is using this SKU. Provide a unique SKU before publishing.
-                                    </span>
-                                  </div>
-                                ) : skuValidation.status === "ok" ? (
-                                  <div className="mt-1.5 p-1.5 rounded-lg bg-emerald-50/80 border border-emerald-200/80 text-[11px] text-emerald-800 font-medium flex items-center gap-1.5">
-                                    <FiCheckCircle className="text-xs shrink-0 text-emerald-600" />
-                                    <span>✓ SKU Available — verified OK to publish.</span>
-                                  </div>
-                                ) : (
-                                  <span className="text-[10px] text-amber-700 mt-1 block">
-                                    ⚠️ Please enter a unique SKU (e.g. CHGM2749, 626-500).
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Luminaire Name */}
-                              <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">
-                                  Luminaire Name *
-                                </label>
-                                <input
-                                  type="text"
-                                  required
-                                  value={name}
-                                  onChange={(e) => setName(e.target.value)}
-                                  placeholder="e.g. Luxury Rose Gold & Crystal Chandelier (CHGM2749)"
-                                  className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                              <div>
-                                <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Category *</label>
-                                <select
-                                  value={category}
-                                  onChange={(e) => setCategory(e.target.value as ProductCategory)}
-                                  className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                                >
-                                  {CATEGORIES.map((cat) => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Subcategory / Format</label>
-                                <input
-                                  type="text"
-                                  value={subcategory}
-                                  onChange={(e) => setSubcategory(e.target.value)}
-                                  placeholder="e.g. Chandelier, Thali, Pendant"
-                                  className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Wattage / Lamp Rating</label>
-                                <input
-                                  type="text"
-                                  value={wattage}
-                                  onChange={(e) => setWattage(e.target.value)}
-                                  placeholder="e.g. 12 × E14 Bulbs (4-9W)"
-                                  className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Minimum Order Qty (MOQ)</label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={moq}
-                                  onChange={(e) => setMoq(e.target.value)}
-                                  className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                                />
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Architectural Tagline</label>
-                              <input
-                                type="text"
-                                value={tagline}
-                                onChange={(e) => setTagline(e.target.value)}
-                                placeholder="e.g. Handcrafted rose gold and clear crystal tiers with 12-bulb refractive illumination."
-                                className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">Full Product Description</label>
-                              <textarea
-                                rows={3}
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="An opulent statement chandelier combining precision-cut faceted crystals..."
-                                className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-xs font-semibold text-[#2A1810] mb-1.5">
-                                Key Features & Bullets (One feature per line)
-                              </label>
-                              <textarea
-                                rows={4}
-                                value={featuresText}
-                                onChange={(e) => setFeaturesText(e.target.value)}
-                                placeholder="12-bulb E14 multi-tier refractive crystal lighting arrangement&#10;Adjustable suspension height from 52 inches up to 90 inches&#10;Handcrafted base in rose gold, deep black, and optical crystal&#10;Supports smooth dimming directly from the main electric supply"
-                                className="w-full px-4 py-2.5 bg-[#F6F2EC]/40 border border-[#2A1810]/15 rounded-xl text-xs text-[#2A1810] font-mono focus:outline-none focus:border-[#C8782A]"
-                              />
-                              <span className="text-[11px] text-[#4A2C1A]/60 mt-1 block">Each line becomes a verified feature bullet with a checkmark on the product page.</span>
-                            </div>
-                          </div>
+                  {/* Live Preview Column - Hidden until user clicks button */}
+                  {showLivePreview && (
+                    <div className="lg:col-span-5 sticky top-24 space-y-4 animate-fadeIn">
+                      <div className="bg-white rounded-3xl p-6 border border-[#2A1810]/10 shadow-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs uppercase font-mono tracking-wider font-semibold text-[#C8782A]">
+                            Live Card Preview
+                          </span>
+                          <span className="text-[11px] font-mono text-[#4A2C1A]/70">
+                            {galleryImages.filter((s) => s.trim().length > 0).length} Photo(s)
+                          </span>
                         </div>
 
-                        {/* 2. Technical Specifications (Collapsible Dropdown Table View) */}
-                        <div className="pt-4 border-t border-[#2A1810]/8 space-y-4">
-                          {/* Dropdown Header Trigger */}
-                          <button
-                            type="button"
-                            onClick={() => setIsSpecsDropdownOpen(!isSpecsDropdownOpen)}
-                            className="w-full flex items-center justify-between p-4 rounded-2xl bg-[#F6F2EC]/80 hover:bg-[#F6F2EC] border border-[#2A1810]/12 transition-all cursor-pointer group text-left shadow-2xs"
-                          >
-                            <div className="flex items-center gap-3.5">
-                              <div className="w-8 h-8 rounded-xl bg-[#C8782A] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                                2
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <h3 className="text-sm font-semibold text-[#2A1810] group-hover:text-[#C8782A] transition-colors">
-                                    Technical Specifications
-                                  </h3>
-                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#C8782A]/10 text-[#C8782A] font-bold">
-                                    {techSpecs.length} Rows Configured
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-[#4A2C1A]/70 mt-0.5">
-                                  {isSpecsDropdownOpen
-                                    ? "Click to collapse specifications table"
-                                    : "Click dropdown to open full specifications table & reordering matrix"}
-                                </p>
-                              </div>
-                            </div>
+                        < div className="rounded-2xl border border-[#2A1810]/15 overflow-hidden bg-white shadow-md" >
+                          <div className="aspect-[4/3] bg-[#F6F2EC] relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={galleryImages[0] || "/Minimalist Luxury Chandelier Interior.webp"}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = "/Minimalist Luxury Chandelier Interior.webp";
+                              }}
+                            />
+                            {subcategory && (
+                              <span className="absolute top-2.5 left-2.5 bg-[#2A1810]/85 backdrop-blur-md text-[#F3EDE4] text-[10px] font-medium uppercase px-2.5 py-1 rounded-full">
+                                {subcategory}
+                              </span>
+                            )}
+                          </div>
 
-                            <div className="flex items-center gap-2 font-medium text-xs text-[#C8782A]">
-                              <span>{isSpecsDropdownOpen ? "Collapse Table" : "Open Table View"}</span>
-                              <div
-                                className={`w-7 h-7 rounded-lg bg-white border border-[#2A1810]/10 flex items-center justify-center transition-transform duration-200 ${isSpecsDropdownOpen ? "rotate-180" : ""
-                                  }`}
-                              >
-                                <FiChevronDown className="text-sm text-[#2A1810]" />
-                              </div>
-                            </div>
-                          </button>
-
-                          {/* Dropdown Content: Structured HTML Table View */}
-                          {isSpecsDropdownOpen && (
-                            <div className="space-y-4 pt-1 animate-fadeIn">
-                              {/* Top Table Action Bar */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F6F2EC]/40 p-3.5 rounded-2xl border border-[#2A1810]/8">
-                                <div>
-                                  <span className="text-xs font-semibold text-[#2A1810] block">
-                                    Specification Matrix ({techSpecs.length} Active Rows)
-                                  </span>
-                                  <span className="text-[11px] text-[#4A2C1A]/70">
-                                    Edit headings on the left, values on the right, and use ↑ ↓ to set display order.
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={addSpecRow}
-                                    className="btn-3d btn-3d-dark text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 font-medium cursor-pointer"
-                                  >
-                                    <FiPlus className="text-xs" /> Add Specification Row
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={resetSpecRows}
-                                    className="btn-3d btn-3d-white text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 font-medium text-[#4A2C1A] hover:text-[#C8782A] cursor-pointer"
-                                    title="Restore standard 19-row luxury luminaire template"
-                                  >
-                                    <FiRotateCcw className="text-xs" /> Reset Template
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Real HTML Table View */}
-                              <div className="bg-white rounded-2xl border border-[#2A1810]/12 overflow-hidden shadow-xs">
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-left border-collapse text-xs">
-                                    <thead>
-                                      <tr className="bg-[#2A1810]/5 border-b border-[#2A1810]/10 text-[#4A2C1A]/80 uppercase tracking-wider text-[10px] font-semibold">
-                                        <th className="py-2.5 px-3 text-center w-[70px]">Order</th>
-                                        <th className="py-2.5 px-3 w-[35%]">Specification Heading (Left)</th>
-                                        <th className="py-2.5 px-3">Specification Value (Right)</th>
-                                        <th className="py-2.5 px-3 text-center w-[50px]">Remove</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[#2A1810]/8">
-                                      {techSpecs.map((row, idx) => (
-                                        <tr key={row.id} className="hover:bg-[#F6F2EC]/40 transition-colors group">
-                                          {/* Order Controls */}
-                                          <td className="py-2 px-3 text-center align-middle">
-                                            <div className="flex items-center justify-center gap-1">
-                                              <button
-                                                type="button"
-                                                disabled={idx === 0}
-                                                onClick={() => moveSpecRow(idx, "up")}
-                                                className="w-5 h-5 rounded hover:bg-[#2A1810]/10 flex items-center justify-center text-[10px] text-[#2A1810]/70 hover:text-[#C8782A] disabled:opacity-20 cursor-pointer"
-                                                title="Move Up in Table"
-                                              >
-                                                <FiArrowUp />
-                                              </button>
-                                              <span className="text-[10px] font-mono font-bold text-[#4A2C1A]/60 w-4 text-center">
-                                                {idx + 1}
-                                              </span>
-                                              <button
-                                                type="button"
-                                                disabled={idx === techSpecs.length - 1}
-                                                onClick={() => moveSpecRow(idx, "down")}
-                                                className="w-5 h-5 rounded hover:bg-[#2A1810]/10 flex items-center justify-center text-[10px] text-[#2A1810]/70 hover:text-[#C8782A] disabled:opacity-20 cursor-pointer"
-                                                title="Move Down in Table"
-                                              >
-                                                <FiArrowDown />
-                                              </button>
-                                            </div>
-                                          </td>
-
-                                          {/* Left Heading Input */}
-                                          <td className="py-2 px-3 align-middle">
-                                            <input
-                                              type="text"
-                                              value={row.label}
-                                              onChange={(e) => updateSpecRow(idx, "label", e.target.value)}
-                                              placeholder="e.g. Base Material"
-                                              className="w-full px-2.5 py-1.5 bg-[#F6F2EC]/50 border border-[#2A1810]/15 rounded-lg text-xs font-semibold text-[#2A1810] focus:outline-none focus:border-[#C8782A] focus:bg-white"
-                                            />
-                                          </td>
-
-                                          {/* Right Value Input */}
-                                          <td className="py-2 px-3 align-middle">
-                                            <input
-                                              type="text"
-                                              value={row.value}
-                                              onChange={(e) => updateSpecRow(idx, "value", e.target.value)}
-                                              placeholder="e.g. Metal & Crystal"
-                                              className="w-full px-2.5 py-1.5 bg-white border border-[#2A1810]/15 rounded-lg text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                                            />
-                                          </td>
-
-                                          {/* Delete Row Button */}
-                                          <td className="py-2 px-3 text-center align-middle">
-                                            <button
-                                              type="button"
-                                              onClick={() => removeSpecRow(idx)}
-                                              className="w-6 h-6 rounded-md text-red-400 hover:text-red-700 hover:bg-red-50 flex items-center justify-center mx-auto transition-colors cursor-pointer"
-                                              title="Remove row"
-                                            >
-                                              <FiTrash2 className="text-xs" />
-                                            </button>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
+                          {/* Small strip of remaining photos */}
+                          {galleryImages.filter((s, i) => i > 0 && s.trim().length > 0).length > 0 && (
+                            <div className="px-3 py-2 bg-[#F6F2EC]/40 border-t border-[#2A1810]/5 flex items-center gap-2 overflow-x-auto">
+                              {galleryImages.map((img, i) =>
+                                i > 0 && img ? (
+                                  <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-[#2A1810]/10 shrink-0 bg-white">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={img} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
+                                  </div>
+                                ) : null
+                              )}
                             </div>
                           )}
-                        </div>
 
-                        {/* 3. Dynamic Gallery Photography */}
-                        <div className="pt-4 border-t border-[#2A1810]/8 space-y-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div>
-                              <h3 className="text-xs uppercase tracking-wider font-semibold text-[#C8782A]">
-                                3. Gallery Photography
-                              </h3>
-                              <p className="text-[11px] text-[#4A2C1A]/70 mt-0.5">
-                                Upload direct files or paste URLs. Dynamic slots: if 2 then 2, if 3 then 3, if 5 then 5.
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] font-mono text-[#2A1810] font-semibold bg-[#F6F2EC] px-2.5 py-1 rounded-md border border-[#2A1810]/8">
-                                {galleryImages.filter((s) => s.trim().length > 0).length} of {galleryImages.length} Photo(s) Active
-                              </span>
-                              <button
-                                type="button"
-                                onClick={addImageSlot}
-                                className="btn-3d btn-3d-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-medium cursor-pointer"
-                              >
-                                <FiPlus className="text-xs" /> Add Photo Slot
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3.5">
-                            {
-                              galleryImages.map((imgVal, idx) => (
-                                <div
-                                  key={idx}
-                                  className="p-3.5 rounded-2xl bg-[#F6F2EC]/50 border border-[#2A1810]/10 flex flex-col sm:flex-row items-start sm:items-center gap-3.5 group hover:border-[#C8782A]/30 transition-colors"
-                                >
-                                  {/* Image preview thumbnail */}
-                                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0 border border-[#2A1810]/10 relative flex items-center justify-center">
-                                    {imgVal ? (
-                                      <>
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={imgVal}
-                                          alt={`Slot ${idx + 1}`}
-                                          className="w-full h-full object-cover"
-                                          onError={(e) => {
-                                            (e.target as HTMLImageElement).src = "/Minimalist Luxury Chandelier Interior.webp";
-                                          }}
-                                        />
-                                        <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[9px] px-1 font-mono">
-                                          #{idx + 1}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <div className="text-center p-1 text-[#2A1810]/30">
-                                        <FiImage className="mx-auto text-base" />
-                                        <span className="text-[9px] block font-mono">#{idx + 1}</span>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Inputs: URL + File Upload */}
-                                  <div className="flex-1 w-full space-y-1.5">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[11px] font-semibold text-[#2A1810]">
-                                        {idx === 0 ? "Photo 1 (Primary Catalogue Cover)" : `Photo ${idx + 1} (Gallery Angle)`}
-                                      </span>
-                                      <div className="flex items-center gap-2">
-                                        {imgVal && (
-                                          <button
-                                            type="button"
-                                            onClick={() => updateSlotImage(idx, "")}
-                                            className="text-[10px] text-amber-700 hover:text-amber-900 font-medium cursor-pointer"
-                                          >
-                                            Clear URL
-                                          </button>
-                                        )}
-                                        {galleryImages.length > 1 && (
-                                          <button
-                                            type="button"
-                                            onClick={() => removeImageSlot(idx)}
-                                            className="text-[10px] text-red-500 hover:text-red-700 font-medium flex items-center gap-0.5 cursor-pointer"
-                                            title="Remove this photo slot"
-                                          >
-                                            <FiTrash2 className="text-[10px]" /> Remove Slot
-                                          </button>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                      <input
-                                        type="text"
-                                        value={imgVal}
-                                        onChange={(e) => updateSlotImage(idx, e.target.value)}
-                                        placeholder="Paste image URL (https://...)"
-                                        className="flex-1 px-3 py-1.5 bg-white border border-[#2A1810]/15 rounded-lg text-xs text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
-                                      />
-
-                                      {/* Upload Button */}
-                                      <label className="btn-3d btn-3d-outline text-xs px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                                        <FiUploadCloud className="text-sm" />
-                                        <span>{uploadingSlot === idx ? "Uploading..." : "Upload File"}</span>
-                                        <input
-                                          type="file"
-                                          accept="image/*"
-                                          className="hidden"
-                                          disabled={uploadingSlot === idx}
-                                          onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) handleFileUpload(idx, file);
-                                          }}
-                                        />
-                                      </label>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-
-                          {/* Bottom Add Photo Slot button */}
-                          <div className="pt-1 flex items-center justify-between">
-                            <button
-                              type="button"
-                              onClick={addImageSlot}
-                              className="btn-3d btn-3d-white text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 font-medium cursor-pointer"
-                            >
-                              <FiPlus className="text-xs" /> Add Another Photo Slot
-                            </button>
-                            <span className="text-[10px] text-[#4A2C1A]/60">
-                              {galleryImages.length} slot(s) currently open
-                            </span>
-                          </div>
-
-                          {/* Preset quick picker */}
-                          <div className="pt-2">
-                            <span className="text-[11px] text-[#4A2C1A]/70 block mb-1.5">Quick fill Slot 1 from presets:</span>
-                            <div className="flex flex-wrap gap-2">
-                              {PRESET_IMAGES.map((preset) => (
-                                <button
-                                  key={preset.label}
-                                  type="button"
-                                  onClick={() => updateSlotImage(0, preset.url)}
-                                  className="text-[10px] px-2.5 py-1 rounded-lg border bg-white text-[#4A2C1A] border-[#2A1810]/10 hover:border-[#C8782A] transition-colors"
-                                >
-                                  {preset.label}
-                                </button>
-                              ))}
-                            </div>
+                          <div className="p-4 space-y-2">
+                            <div className="text-[10px] uppercase tracking-wider text-[#C8782A] font-semibold">{category}</div>
+                            <h4 className="font-display text-base font-semibold text-[#2A1810] line-clamp-2">
+                              {name || "Untitled Luminaire Design"}
+                            </h4>
+                            {tagline && <p className="text-xs text-[#4A2C1A]/70 italic line-clamp-1">&ldquo;{tagline}&rdquo;</p>}
+                            {material && <p className="text-[11px] text-[#4A2C1A]/60 line-clamp-1">{material}</p>}
                           </div>
                         </div>
-
-                        {/* Submit button */}
-                        < div className="pt-6 border-t border-[#2A1810]/8 flex items-center justify-between" >
-                          {
-                            editingId ? (
-                              <button
-                                type="button"
-                                onClick={cancelEditing}
-                                className="text-xs text-[#4A2C1A]/80 hover:text-[#2A1810] font-medium"
-                              >
-                                ← Cancel and return to Inventory
-                              </button>
-                            ) : <div />}
-
-                          <button
-                            type="submit"
-                            disabled={submitting || skuValidation.status === "duplicate" || skuValidation.status === "empty"}
-                            className={`btn-3d text-xs px-7 py-3 rounded-full flex items-center gap-2 font-medium transition-all ${skuValidation.status === "duplicate"
-                                ? "bg-rose-900/60 text-white cursor-not-allowed opacity-60"
-                                : skuValidation.status === "empty"
-                                  ? "bg-[#2A1810]/40 text-white cursor-not-allowed opacity-60"
-                                  : "btn-3d-dark"
-                              }`}
-                          >
-                            {editingId ? <FiEdit2 className="text-sm" /> : <FiPlusCircle className="text-sm" />}
-                            <span>
-                              {submitting
-                                ? "Saving..."
-                                : skuValidation.status === "duplicate"
-                                  ? "Cannot Publish: SKU Already Exists"
-                                  : skuValidation.status === "empty"
-                                    ? "Provide SKU to Publish"
-                                    : editingId
-                                      ? "Save Changes"
-                                      : "Publish Luminaire"}
-                            </span>
-                          </button>
-                        </div>
-                      </form>
-
-                      {/* Live Preview Column - Hidden until user clicks button */}
-                      {showLivePreview && (
-                        <div className="lg:col-span-5 sticky top-24 space-y-4 animate-fadeIn">
-                          <div className="bg-white rounded-3xl p-6 border border-[#2A1810]/10 shadow-lg">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs uppercase font-mono tracking-wider font-semibold text-[#C8782A]">
-                                Live Card Preview
-                              </span>
-                              <span className="text-[11px] font-mono text-[#4A2C1A]/70">
-                                {galleryImages.filter((s) => s.trim().length > 0).length} Photo(s)
-                              </span>
-                            </div>
-
-                            < div className="rounded-2xl border border-[#2A1810]/15 overflow-hidden bg-white shadow-md" >
-                              <div className="aspect-[4/3] bg-[#F6F2EC] relative">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={galleryImages[0] || "/Minimalist Luxury Chandelier Interior.webp"}
-                                  alt="Preview"
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "/Minimalist Luxury Chandelier Interior.webp";
-                                  }}
-                                />
-                                {subcategory && (
-                                  <span className="absolute top-2.5 left-2.5 bg-[#2A1810]/85 backdrop-blur-md text-[#F3EDE4] text-[10px] font-medium uppercase px-2.5 py-1 rounded-full">
-                                    {subcategory}
-                                  </span>
-                                )}
-                              </div>
-
-                              {/* Small strip of remaining photos */}
-                              {galleryImages.filter((s, i) => i > 0 && s.trim().length > 0).length > 0 && (
-                                <div className="px-3 py-2 bg-[#F6F2EC]/40 border-t border-[#2A1810]/5 flex items-center gap-2 overflow-x-auto">
-                                  {galleryImages.map((img, i) =>
-                                    i > 0 && img ? (
-                                      <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-[#2A1810]/10 shrink-0 bg-white">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img src={img} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
-                                      </div>
-                                    ) : null
-                                  )}
-                                </div>
-                              )}
-
-                              <div className="p-4 space-y-2">
-                                <div className="text-[10px] uppercase tracking-wider text-[#C8782A] font-semibold">{category}</div>
-                                <h4 className="font-display text-base font-semibold text-[#2A1810] line-clamp-2">
-                                  {name || "Untitled Luminaire Design"}
-                                </h4>
-                                {tagline && <p className="text-xs text-[#4A2C1A]/70 italic line-clamp-1">&ldquo;{tagline}&rdquo;</p>}
-                                {material && <p className="text-[11px] text-[#4A2C1A]/60 line-clamp-1">{material}</p>}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+            </div>
                 )}
 
-                {/* View: Enquiry */}
-                {activeView === "enquiry" && (
-                  <div className="p-6 lg:p-10 space-y-8 max-w-7xl">
-                    <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">Concierge & Inquiries</h1>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="bg-white rounded-3xl p-6 lg:p-8 border border-[#2A1810]/10 shadow-sm space-y-4">
-                        <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-                          <FiMessageSquare />
-                        </div>
-                        <h3 className="font-display text-lg text-[#2A1810]">WhatsApp Sales Line</h3>
-                        <p className="text-xs text-[#4A2C1A]/70 leading-relaxed">+91 99901 79666</p>
-                        <a href="https://wa.me/919990179666" target="_blank" rel="noopener noreferrer" className="btn-3d btn-3d-dark text-xs px-5 py-2.5 rounded-full inline-flex items-center gap-2">
-                          <span>Open WhatsApp Console</span>
-                        </a>
-                      </div>
-
-                      <div className="bg-white rounded-3xl p-6 lg:p-8 border border-[#2A1810]/10 shadow-sm space-y-4">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl">
-                          <FiPhone />
-                        </div>
-                        <h3 className="font-display text-lg text-[#2A1810]">Sector 104 Experience Center</h3>
-                        <p className="text-xs text-[#4A2C1A]/70 leading-relaxed">Khasra No 514, Sector 104, Noida, Uttar Pradesh.</p>
-                        <a href="mailto:nivoseasLLP@gmail.com" className="btn-3d btn-3d-outline text-xs px-5 py-2.5 rounded-full inline-flex items-center gap-2">
-                          <span>Compose Direct Mail</span>
-                        </a>
-                      </div>
+            {/* View: Enquiry */}
+            {activeView === "enquiry" && (
+              <div className="p-6 lg:p-10 space-y-8 max-w-7xl">
+                <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">Concierge & Inquiries</h1>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-3xl p-6 lg:p-8 border border-[#2A1810]/10 shadow-sm space-y-4">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                      <FiMessageSquare />
                     </div>
+                    <h3 className="font-display text-lg text-[#2A1810]">WhatsApp Sales Line</h3>
+                    <p className="text-xs text-[#4A2C1A]/70 leading-relaxed">+91 99901 79666</p>
+                    <a href="https://wa.me/919990179666" target="_blank" rel="noopener noreferrer" className="btn-3d btn-3d-dark text-xs px-5 py-2.5 rounded-full inline-flex items-center gap-2">
+                      <span>Open WhatsApp Console</span>
+                    </a>
                   </div>
-                )}
-              </main>
 
-              {/* Slide-over Inspection Drawer */}
-              {selectedProduct && (
-                <div className="fixed inset-0 z-50 flex justify-end">
-                  <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setSelectedProduct(null)} />
-                  <div className="relative w-full max-w-md bg-white h-full shadow-2xl z-10 flex flex-col justify-between overflow-y-auto p-6 sm:p-8 border-l border-[#2A1810]/10">
-                    <div>
-                      <div className="flex items-center justify-between pb-4 border-b border-[#2A1810]/10 mb-6">
-                        <span className="text-xs uppercase font-mono tracking-wider font-semibold text-[#C8782A]">Fixture Inspection</span>
-                        <button onClick={() => setSelectedProduct(null)} className="p-1 rounded-lg text-[#2A1810]/60 hover:text-[#2A1810]">
-                          <FiX className="text-lg" />
-                        </button>
-                      </div>
-
-                      <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#F6F2EC] mb-5 border border-[#2A1810]/10">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={selectedProduct.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                      </div>
-
-                      {selectedProduct.images.length > 1 && (
-                        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
-                          {selectedProduct.images.map((img, i) => (
-                            <div key={i} className="w-12 h-12 rounded-lg overflow-hidden border border-[#2A1810]/10 shrink-0 bg-white">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={img} alt={`Gallery ${i} `} className="w-full h-full object-cover" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="space-y-2 text-xs">
-                        <span className="text-[11px] uppercase tracking-wider font-semibold text-[#C8782A]">{selectedProduct.category}</span>
-                        <h3 className="font-display text-xl font-semibold text-[#2A1810]">{selectedProduct.name}</h3>
-                        {selectedProduct.tagline && <p className="text-xs text-[#4A2C1A]/70 italic">&ldquo;{selectedProduct.tagline}&rdquo;</p>}
-                        {selectedProduct.description && (
-                          <p className="text-xs text-[#4A2C1A] leading-relaxed pt-2 border-t border-[#2A1810]/5">
-                            {selectedProduct.description}
-                          </p>
-                        )}
-                      </div>
+                  <div className="bg-white rounded-3xl p-6 lg:p-8 border border-[#2A1810]/10 shadow-sm space-y-4">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl">
+                      <FiPhone />
                     </div>
-
-                    <div className="pt-6 border-t border-[#2A1810]/10 space-y-2">
-                      <button
-                        onClick={() => startEditing(selectedProduct)}
-                        className="btn-3d btn-3d-amber w-full py-2.5 text-center text-xs rounded-xl flex items-center justify-center gap-2 font-medium"
-                      >
-                        <FiEdit2 className="text-sm" /> Edit Specifications & Gallery
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <Link href={`/ products / ${selectedProduct.slug} `} target="_blank" className="btn-3d btn-3d-dark flex-1 py-2.5 text-center text-xs rounded-xl">
-                          View Public Page ↗
-                        </Link>
-                        <button onClick={() => handleDeleteProduct(selectedProduct.id, selectedProduct.name)} className="btn-3d btn-3d-outline text-red-600 border-red-200 py-2.5 px-4 text-xs rounded-xl">
-                          Delete
-                        </button>
-                      </div>
-                    </div>
+                    <h3 className="font-display text-lg text-[#2A1810]">Sector 104 Experience Center</h3>
+                    <p className="text-xs text-[#4A2C1A]/70 leading-relaxed">Khasra No 514, Sector 104, Noida, Uttar Pradesh.</p>
+                    <a href="mailto:nivoseasLLP@gmail.com" className="btn-3d btn-3d-outline text-xs px-5 py-2.5 rounded-full inline-flex items-center gap-2">
+                      <span>Compose Direct Mail</span>
+                    </a>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
+          </main>
+
+              {/* Slide-over Inspection Drawer */}
+        {selectedProduct && (
+          <div className="fixed inset-0 z-50 flex justify-end">
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setSelectedProduct(null)} />
+            <div className="relative w-full max-w-md bg-white h-full shadow-2xl z-10 flex flex-col justify-between overflow-y-auto p-6 sm:p-8 border-l border-[#2A1810]/10">
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-[#2A1810]/10 mb-6">
+                  <span className="text-xs uppercase font-mono tracking-wider font-semibold text-[#C8782A]">Fixture Inspection</span>
+                  <button onClick={() => setSelectedProduct(null)} className="p-1 rounded-lg text-[#2A1810]/60 hover:text-[#2A1810]">
+                    <FiX className="text-lg" />
+                  </button>
+                </div>
+
+                <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#F6F2EC] mb-5 border border-[#2A1810]/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={selectedProduct.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                </div>
+
+                {selectedProduct.images.length > 1 && (
+                  <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+                    {selectedProduct.images.map((img, i) => (
+                      <div key={i} className="w-12 h-12 rounded-lg overflow-hidden border border-[#2A1810]/10 shrink-0 bg-white">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img} alt={`Gallery ${i} `} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-2 text-xs">
+                  <span className="text-[11px] uppercase tracking-wider font-semibold text-[#C8782A]">{selectedProduct.category}</span>
+                  <h3 className="font-display text-xl font-semibold text-[#2A1810]">{selectedProduct.name}</h3>
+                  {selectedProduct.tagline && <p className="text-xs text-[#4A2C1A]/70 italic">&ldquo;{selectedProduct.tagline}&rdquo;</p>}
+                  {selectedProduct.description && (
+                    <p className="text-xs text-[#4A2C1A] leading-relaxed pt-2 border-t border-[#2A1810]/5">
+                      {selectedProduct.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-[#2A1810]/10 space-y-2">
+                <button
+                  onClick={() => startEditing(selectedProduct)}
+                  className="btn-3d btn-3d-amber w-full py-2.5 text-center text-xs rounded-xl flex items-center justify-center gap-2 font-medium"
+                >
+                  <FiEdit2 className="text-sm" /> Edit Specifications & Gallery
+                </button>
+                <div className="flex items-center gap-2">
+                  <Link href={`/ products / ${selectedProduct.slug} `} target="_blank" className="btn-3d btn-3d-dark flex-1 py-2.5 text-center text-xs rounded-xl">
+                    View Public Page ↗
+                  </Link>
+                  <button onClick={() => handleDeleteProduct(selectedProduct.id, selectedProduct.name)} className="btn-3d btn-3d-outline text-red-600 border-red-200 py-2.5 px-4 text-xs rounded-xl">
+                    Delete
+                  </button>
+                </div>
+              </div>
             </div>
-            );
+          </div>
+        )}
+    </div>
+  );
 }

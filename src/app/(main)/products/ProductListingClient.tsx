@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Product } from "@/data/products";
 import { CATEGORIES } from "@/data/categories";
 import { cldPresets } from "@/lib/cloudinary";
@@ -20,6 +21,7 @@ interface ProductListingClientProps {
 }
 
 export default function ProductListingClient({ initialProducts }: ProductListingClientProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [activeSubcategory, setActiveSubcategory] = useState<string>("all");
@@ -37,8 +39,12 @@ export default function ProductListingClient({ initialProducts }: ProductListing
     return initialProducts
       .filter((p) => {
         // Category filter
-        if (activeCategory !== "all" && p.category !== activeCategory) {
-          return false;
+        if (activeCategory !== "all") {
+          const match =
+            p.categories && p.categories.length > 0
+              ? p.categories.includes(activeCategory as any)
+              : p.category === activeCategory;
+          if (!match) return false;
         }
 
         // Subcategory filter
@@ -206,7 +212,11 @@ export default function ProductListingClient({ initialProducts }: ProductListing
               All Fixtures ({initialProducts.length})
             </button>
             {CATEGORIES.map((cat) => {
-              const count = initialProducts.filter((p) => p.category === cat.id).length;
+              const count = initialProducts.filter((p) =>
+                p.categories && p.categories.length > 0
+                  ? p.categories.includes(cat.id as any)
+                  : p.category === cat.id
+              ).length;
               return (
                 <button
                   key={cat.id}
@@ -232,8 +242,8 @@ export default function ProductListingClient({ initialProducts }: ProductListing
               <button
                 onClick={() => setActiveSubcategory("all")}
                 className={`text-xs px-3 py-1 rounded-full transition-colors ${activeSubcategory === "all"
-                    ? "bg-[#2A1810] text-[#F3EDE4] font-medium"
-                    : "bg-[#2A1810]/5 text-[#4A2C1A] hover:bg-[#2A1810]/10"
+                  ? "bg-[#2A1810] text-[#F3EDE4] font-medium"
+                  : "bg-[#2A1810]/5 text-[#4A2C1A] hover:bg-[#2A1810]/10"
                   }`}
               >
                 All {currentCategoryObj.name}
@@ -243,8 +253,8 @@ export default function ProductListingClient({ initialProducts }: ProductListing
                   key={sub.name}
                   onClick={() => setActiveSubcategory(sub.name)}
                   className={`text-xs px-3 py-1 rounded-full transition-colors ${activeSubcategory === sub.name
-                      ? "bg-[#2A1810] text-[#F3EDE4] font-medium"
-                      : "bg-[#2A1810]/5 text-[#4A2C1A] hover:bg-[#2A1810]/10"
+                    ? "bg-[#2A1810] text-[#F3EDE4] font-medium"
+                    : "bg-[#2A1810]/5 text-[#4A2C1A] hover:bg-[#2A1810]/10"
                     }`}
                 >
                   {sub.name}
@@ -313,18 +323,23 @@ export default function ProductListingClient({ initialProducts }: ProductListing
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="group flex flex-col bg-white rounded-[26px] border border-[#2A1810]/10 hover:border-[#2A1810]/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-[#2A1810]/8"
+                onClick={(e) => {
+                  // If clicking the WhatsApp enquire button, do not navigate
+                  if ((e.target as HTMLElement).closest("a[href*='wa.me']")) return;
+                  router.push(`/products/${product.slug}`);
+                }}
+                className="group flex flex-col bg-white rounded-[26px] border border-[#2A1810]/10 hover:border-[#2A1810]/20 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-[#2A1810]/8 cursor-pointer"
               >
-                {/* Image frame */}
+                {/* Image frame — 4:5 full-bleed portrait frame */}
                 <Link
                   href={`/products/${product.slug}`}
-                  className="relative block aspect-[4/3] overflow-hidden bg-[#E6DACB]/30"
+                  className="relative block aspect-[4/5] overflow-hidden rounded-t-[24px] bg-[#E6DACB]/30"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={cldPresets.thumbnail(product.images[0] || "/Minimalist Luxury Chandelier Interior.webp")}
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover [object-position:center_40%] group-hover:scale-105 transition-transform duration-500 block"
                     loading="lazy"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "/Minimalist Luxury Chandelier Interior.webp";
@@ -358,7 +373,12 @@ export default function ProductListingClient({ initialProducts }: ProductListing
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
                     <div className="text-[11px] uppercase tracking-wider text-[#C8782A] font-semibold mb-1">
-                      {product.category.replace("-", " ")}
+                      {(product.categories && product.categories.length > 0
+                        ? product.categories
+                        : [product.category]
+                      )
+                        .map((c) => c.replace("-", " "))
+                        .join(" • ")}
                     </div>
                     <Link href={`/products/${product.slug}`}>
                       <h3 className="font-display text-base font-semibold text-[#2A1810] group-hover:text-[#C8782A] transition-colors leading-snug line-clamp-2">

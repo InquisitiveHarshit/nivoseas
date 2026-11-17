@@ -76,10 +76,10 @@ export default function Intro() {
             </Link>
           </div>
 
-          {/* Right — image with smooth parallax */}
+          {/* Right — image showing complete fixture and warm interior ambiance */}
           <div
             data-reveal
-            className="card-img-mask h-[420px] sm:h-[520px] lg:h-[580px] shadow-2xl shadow-[#2A1810]/15"
+            className="card-img-mask aspect-[4/5] w-full max-w-[480px] sm:max-w-[520px] lg:max-w-[560px] mx-auto lg:ml-auto shadow-2xl shadow-[#2A1810]/15"
             style={{ opacity: 0, transform: "translateY(32px)", transition: "opacity 0.9s ease 0.15s, transform 0.9s ease 0.15s" }}
           >
             <ParallaxImage
@@ -87,9 +87,9 @@ export default function Intro() {
               alt="Nivoseas craftsmanship, lighting experience and luxury interiors"
               aspectRatio="auto"
               className="w-full h-full"
-              imgClassName="object-top sm:object-[center_8%]"
-              speed={14}
-              scale={1.04}
+              imgClassName="object-cover object-top"
+              speed={0}
+              scale={1.0}
             />
           </div>
         </div>
