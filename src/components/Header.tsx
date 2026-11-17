@@ -142,7 +142,7 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/#about"
+                href="/about"
                 className="relative group text-[#2A1810] hover:text-[#C8782A] text-[14px] font-medium py-2"
               >
                 <span>About Us</span>
@@ -315,7 +315,7 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/#contact"
+                href="/contact"
                 className="relative group text-[#2A1810] hover:text-[#C8782A] text-[14px] font-medium py-2"
               >
                 <span>Contact</span>
@@ -406,7 +406,7 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/#about"
+                href="/about"
                 className="block py-2 text-[#2A1810] text-base font-bold border-b border-[#2A1810]/8"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -414,7 +414,7 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/#contact"
+                href="/contact"
                 className="block py-2 text-[#2A1810] text-base font-bold border-b border-[#2A1810]/8"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
