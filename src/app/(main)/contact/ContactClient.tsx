@@ -65,6 +65,20 @@ export default function ContactClient() {
     e.preventDefault();
     if (!formState.name.trim() || !formState.phone.trim()) return;
 
+    // Asynchronously capture the lead in the backend store
+    fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: formState.name,
+        phone: formState.phone,
+        email: formState.email,
+        projectType: formState.projectType,
+        message: formState.message,
+        source: "contact-form",
+      }),
+    }).catch((err) => console.warn("Lead save error:", err));
+
     // Build pre-filled WhatsApp message
     const text = `*New Lighting Inquiry via Nivoseas Website*%0A%0A*Name:* ${encodeURIComponent(
       formState.name
