@@ -32,8 +32,7 @@ export const CATEGORIES: Category[] = [
       { name: "Picture Light" },
       { name: "Table Lamp" },
     ],
-    heroImage:
-      "https://nivoseas.com/wp-content/uploads/2024/01/chandelier-category.jpg",
+    heroImage: "/decorative.webp",
     accentColor: "#C8782A",
   },
   {
@@ -86,8 +85,7 @@ export const CATEGORIES: Category[] = [
       { name: "Bollard Lights" },
       { name: "Outdoor Light" },
     ],
-    heroImage:
-      "https://nivoseas.com/wp-content/uploads/2024/01/gate-light-category.jpg",
+    heroImage: "/outdoor.webp",
     accentColor: "#4A2C1A",
   },
   {
@@ -105,8 +103,7 @@ export const CATEGORIES: Category[] = [
       { name: "High Bay Lights" },
       { name: "Industrial Lights" },
     ],
-    heroImage:
-      "https://nivoseas.com/wp-content/uploads/2024/01/led-panel-category.jpg",
+    heroImage: "/office.webp",
     accentColor: "#2A1810",
   },
   {
@@ -124,8 +121,7 @@ export const CATEGORIES: Category[] = [
       { name: "Panasonic Range", count: 36 },
       { name: "GM Range", count: 15 },
     ],
-    heroImage:
-      "https://nivoseas.com/wp-content/uploads/2024/01/led-panel-category.jpg",
+    heroImage: "/architectural-led.jpg",
     accentColor: "#2A1810",
   },
   {
@@ -141,8 +137,7 @@ export const CATEGORIES: Category[] = [
       { name: "Ceiling Fans" },
       { name: "Decorative Fans" },
     ],
-    heroImage:
-      "https://nivoseas.com/wp-content/uploads/2024/01/led-fan-category.jpg",
+    heroImage: "/led-fan.jpg",
     accentColor: "#D9B46C",
   },
   {
@@ -158,8 +153,7 @@ export const CATEGORIES: Category[] = [
       { name: "GM" },
       { name: "Other Brands" },
     ],
-    heroImage:
-      "https://nivoseas.com/wp-content/uploads/2024/01/led-panel-category.jpg",
+    heroImage: "/bannerbg.webp",
     accentColor: "#4A2C1A",
   },
 ];

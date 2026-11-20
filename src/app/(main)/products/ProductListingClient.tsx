@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Product } from "@/data/products";
 import { CATEGORIES } from "@/data/categories";
 import { cldPresets } from "@/lib/cloudinary";
@@ -22,11 +22,22 @@ interface ProductListingClientProps {
 
 export default function ProductListingClient({ initialProducts }: ProductListingClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [activeCategory, setActiveCategory] = useState<string>(categoryParam || "all");
   const [activeSubcategory, setActiveSubcategory] = useState<string>("all");
   const [usageFilter, setUsageFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"featured" | "name-asc" | "category">("featured");
+
+  // Sync category filter when URL search params change
+  useEffect(() => {
+    if (categoryParam) {
+      setActiveCategory(categoryParam);
+      setActiveSubcategory("all");
+    }
+  }, [categoryParam]);
 
   // Get active category object
   const currentCategoryObj = useMemo(

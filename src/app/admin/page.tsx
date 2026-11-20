@@ -62,7 +62,7 @@ const DEFAULT_IMAGES = [
 ];
 
 export default function AdminPage() {
-  const [activeView, setActiveView] = useState<"overview" | "inventory" | "add" | "enquiry">("overview");
+  const [activeView, setActiveView] = useState<"overview" | "inventory" | "add" | "enquiry" | "collections">("overview");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -218,7 +218,105 @@ export default function AdminPage() {
     );
   };
 
-  // Dynamic Gallery Images state (not strictly 5: supports 1, 2, 3, 5 or more)
+  // Category Images state (for Collections admin view)
+  const [catImages, setCatImages] = useState<
+    { id: string; name: string; slug: string; heroImage: string | null; defaultImage: string | null; hasOverride: boolean }[]
+  >([]);
+  const [catImagesLoading, setCatImagesLoading] = useState(false);
+  const [catUploadingSlot, setCatUploadingSlot] = useState<string | null>(null);
+  const [catUrlInputs, setCatUrlInputs] = useState<Record<string, string>>({});
+
+  const fetchCatImages = async () => {
+    setCatImagesLoading(true);
+    try {
+      const res = await fetch("/api/categories");
+      const json = await res.json();
+      if (json.success) {
+        setCatImages(json.data);
+        const inputs: Record<string, string> = {};
+        for (const c of json.data) inputs[c.id] = c.heroImage || "";
+        setCatUrlInputs(inputs);
+      }
+    } catch {
+      setFeedback({ type: "error", text: "Failed to load category images." });
+    } finally {
+      setCatImagesLoading(false);
+    }
+  };
+
+  const saveCatImage = async (categoryId: string, heroImage: string) => {
+    if (!heroImage.trim()) return;
+    try {
+      const res = await fetch("/api/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoryId, heroImage: heroImage.trim() }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setFeedback({ type: "success", text: "Category image updated." });
+        await fetchCatImages();
+      } else {
+        setFeedback({ type: "error", text: json.error || "Failed to save." });
+      }
+    } catch {
+      setFeedback({ type: "error", text: "Network error saving category image." });
+    }
+  };
+
+  const resetCatImage = async (categoryId: string) => {
+    try {
+      const res = await fetch(`/api/categories?categoryId=${encodeURIComponent(categoryId)}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.success) {
+        setFeedback({ type: "success", text: "Reset to default image." });
+        await fetchCatImages();
+      } else {
+        setFeedback({ type: "error", text: json.error || "Failed to reset." });
+      }
+    } catch {
+      setFeedback({ type: "error", text: "Network error resetting image." });
+    }
+  };
+
+  const handleCatFileUpload = async (categoryId: string, file: File) => {
+    setCatUploadingSlot(categoryId);
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "nivoseas_products";
+    if (cloudName && uploadPreset) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", uploadPreset);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.secure_url) {
+          await saveCatImage(categoryId, data.secure_url);
+          setCatUploadingSlot(null);
+          return;
+        }
+      } catch (e) {
+        console.warn("Cloudinary upload failed, using data URL", e);
+      }
+    }
+    // Fallback: data URL
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const result = e.target?.result as string;
+      if (result) await saveCatImage(categoryId, result);
+      setCatUploadingSlot(null);
+    };
+    reader.onerror = () => {
+      setFeedback({ type: "error", text: "Failed to read image file." });
+      setCatUploadingSlot(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Fetch category images when navigating to collections view
   const [galleryImages, setGalleryImages] = useState<string[]>(DEFAULT_IMAGES);
   const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
 
@@ -307,6 +405,13 @@ export default function AdminPage() {
     fetchProducts();
     fetchLeads();
   }, []);
+
+  useEffect(() => {
+    if (activeView === "collections" && catImages.length === 0) {
+      fetchCatImages();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView]);
 
   const newLeadsCount = useMemo(() => {
     return leads.filter((l) => l.status === "new").length;
@@ -747,6 +852,20 @@ export default function AdminPage() {
                     {newLeadsCount} New
                   </span>
                 )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setActiveView("collections");
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${activeView === "collections"
+                  ? "bg-[#C8782A] text-white shadow-md shadow-[#C8782A]/20"
+                  : "text-[#F3EDE4]/70 hover:bg-white/5 hover:text-white"
+                  }`}
+              >
+                <FiImage className="text-sm shrink-0" />
+                <span>Category Images</span>
               </button>
             </nav>
           </div >
@@ -1818,369 +1937,523 @@ export default function AdminPage() {
         {/* View: Enquiry & Leads */}
         {activeView === "enquiry" && (
           <div className="p-6 lg:p-10 space-y-8 max-w-7xl">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2A1810]/10">
-                  <div>
-                    <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">
-                      Customer Leads & Inquiries
-                    </h1>
-                    <p className="text-xs text-[#4A2C1A]/70 mt-1">
-                      Real-time inquiries received from the website contact form, custom drop requests, and WhatsApp console.
-                    </p>
-                  </div>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2A1810]/10">
+              <div>
+                <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">
+                  Customer Leads & Inquiries
+                </h1>
+                <p className="text-xs text-[#4A2C1A]/70 mt-1">
+                  Real-time inquiries received from the website contact form, custom drop requests, and WhatsApp console.
+                </p>
+              </div>
+              <button
+                onClick={fetchLeads}
+                disabled={leadsLoading}
+                className="btn-3d btn-3d-outline text-xs px-4 py-2 rounded-xl flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+              >
+                <FiRefreshCw className={`text-xs ${leadsLoading ? "animate-spin" : ""}`} />
+                <span>{leadsLoading ? "Refreshing..." : "Refresh Leads"}</span>
+              </button>
+            </div>
+
+            {/* Metrics Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-2xl p-5 border border-[#2A1810]/10 shadow-sm">
+                <span className="text-[11px] uppercase tracking-wider text-[#4A2C1A]/60 font-semibold">
+                  Total Inquiries
+                </span>
+                <p className="font-display text-2xl lg:text-3xl font-bold text-[#2A1810] mt-1">
+                  {leads.length}
+                </p>
+              </div>
+
+              <div className="bg-emerald-50/60 rounded-2xl p-5 border border-emerald-200 shadow-sm">
+                <span className="text-[11px] uppercase tracking-wider text-emerald-800 font-semibold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  New / Pending
+                </span>
+                <p className="font-display text-2xl lg:text-3xl font-bold text-emerald-900 mt-1">
+                  {newLeadsCount}
+                </p>
+              </div>
+
+              <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-200 shadow-sm">
+                <span className="text-[11px] uppercase tracking-wider text-blue-800 font-semibold">
+                  Contacted / Active
+                </span>
+                <p className="font-display text-2xl lg:text-3xl font-bold text-blue-900 mt-1">
+                  {leads.filter((l) => l.status === "contacted" || l.status === "in-progress").length}
+                </p>
+              </div>
+
+              <div className="bg-amber-50/60 rounded-2xl p-5 border border-amber-200 shadow-sm">
+                <span className="text-[11px] uppercase tracking-wider text-amber-800 font-semibold">
+                  Closed / Converted
+                </span>
+                <p className="font-display text-2xl lg:text-3xl font-bold text-amber-900 mt-1">
+                  {leads.filter((l) => l.status === "closed").length}
+                </p>
+              </div>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#2A1810]/10 shadow-sm">
+              {/* Status Tabs */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { id: "all", label: `All (${leads.length})` },
+                  { id: "new", label: `New (${newLeadsCount})` },
+                  { id: "contacted", label: "Contacted" },
+                  { id: "in-progress", label: "In Progress" },
+                  { id: "closed", label: "Closed" },
+                ].map((tab) => (
                   <button
-                    onClick={fetchLeads}
-                    disabled={leadsLoading}
-                    className="btn-3d btn-3d-outline text-xs px-4 py-2 rounded-xl flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+                    key={tab.id}
+                    onClick={() => setLeadStatusFilter(tab.id)}
+                    className={`text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${leadStatusFilter === tab.id
+                      ? "bg-[#2A1810] text-[#F3EDE4] shadow-sm"
+                      : "bg-[#F3EDE4]/50 text-[#2A1810]/70 hover:bg-[#F3EDE4] hover:text-[#2A1810]"
+                      }`}
                   >
-                    <FiRefreshCw className={`text-xs ${leadsLoading ? "animate-spin" : ""}`} />
-                    <span>{leadsLoading ? "Refreshing..." : "Refresh Leads"}</span>
+                    {tab.label}
                   </button>
+                ))}
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative min-w-[240px]">
+                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#2A1810]/40" />
+                <input
+                  type="text"
+                  value={leadSearchTerm}
+                  onChange={(e) => setLeadSearchTerm(e.target.value)}
+                  placeholder="Search name, phone, message..."
+                  className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-[#F3EDE4]/30 border border-[#2A1810]/10 focus:bg-white focus:border-[#C8782A] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Leads List */}
+            {filteredLeads.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-[#2A1810]/10 space-y-3">
+                <div className="w-14 h-14 rounded-full bg-[#F3EDE4] text-[#C8782A] flex items-center justify-center mx-auto text-2xl">
+                  <FiMessageSquare />
                 </div>
+                <h3 className="font-display text-lg font-medium text-[#2A1810]">
+                  No Leads Match Your Filter
+                </h3>
+                <p className="text-xs text-[#4A2C1A]/70 max-w-md mx-auto">
+                  {leads.length === 0
+                    ? "When prospective clients submit inquiries on the contact form, their contact details and requirements will appear here in real-time."
+                    : "Try selecting another status tab or clearing your search keywords."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredLeads.map((lead) => {
+                  const initials = lead.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .substring(0, 2)
+                    .toUpperCase();
 
-                {/* Metrics Row */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-2xl p-5 border border-[#2A1810]/10 shadow-sm">
-                    <span className="text-[11px] uppercase tracking-wider text-[#4A2C1A]/60 font-semibold">
-                      Total Inquiries
-                    </span>
-                    <p className="font-display text-2xl lg:text-3xl font-bold text-[#2A1810] mt-1">
-                      {leads.length}
-                    </p>
-                  </div>
+                  const formattedDate = new Date(lead.createdAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
 
-                  <div className="bg-emerald-50/60 rounded-2xl p-5 border border-emerald-200 shadow-sm">
-                    <span className="text-[11px] uppercase tracking-wider text-emerald-800 font-semibold flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      New / Pending
-                    </span>
-                    <p className="font-display text-2xl lg:text-3xl font-bold text-emerald-900 mt-1">
-                      {newLeadsCount}
-                    </p>
-                  </div>
+                  const cleanPhone = lead.phone.replace(/[^0-9]/g, "");
+                  const waLink = `https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=Hi%20${encodeURIComponent(
+                    lead.name
+                  )}%2C%20thank%20you%20for%20contacting%20Nivoseas%20Lighting.%20I%20am%20following%20up%20on%20your%20inquiry.`;
 
-                  <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-200 shadow-sm">
-                    <span className="text-[11px] uppercase tracking-wider text-blue-800 font-semibold">
-                      Contacted / Active
-                    </span>
-                    <p className="font-display text-2xl lg:text-3xl font-bold text-blue-900 mt-1">
-                      {leads.filter((l) => l.status === "contacted" || l.status === "in-progress").length}
-                    </p>
-                  </div>
-
-                  <div className="bg-amber-50/60 rounded-2xl p-5 border border-amber-200 shadow-sm">
-                    <span className="text-[11px] uppercase tracking-wider text-amber-800 font-semibold">
-                      Closed / Converted
-                    </span>
-                    <p className="font-display text-2xl lg:text-3xl font-bold text-amber-900 mt-1">
-                      {leads.filter((l) => l.status === "closed").length}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Filter and Search Bar */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[#2A1810]/10 shadow-sm">
-                  {/* Status Tabs */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {[
-                      { id: "all", label: `All (${leads.length})` },
-                      { id: "new", label: `New (${newLeadsCount})` },
-                      { id: "contacted", label: "Contacted" },
-                      { id: "in-progress", label: "In Progress" },
-                      { id: "closed", label: "Closed" },
-                    ].map((tab) => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setLeadStatusFilter(tab.id)}
-                        className={`text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${leadStatusFilter === tab.id
-                            ? "bg-[#2A1810] text-[#F3EDE4] shadow-sm"
-                            : "bg-[#F3EDE4]/50 text-[#2A1810]/70 hover:bg-[#F3EDE4] hover:text-[#2A1810]"
-                          }`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Search Bar */}
-                  <div className="relative min-w-[240px]">
-                    <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[#2A1810]/40" />
-                    <input
-                      type="text"
-                      value={leadSearchTerm}
-                      onChange={(e) => setLeadSearchTerm(e.target.value)}
-                      placeholder="Search name, phone, message..."
-                      className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-[#F3EDE4]/30 border border-[#2A1810]/10 focus:bg-white focus:border-[#C8782A] focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Leads List */}
-                {filteredLeads.length === 0 ? (
-                  <div className="bg-white rounded-3xl p-12 text-center border border-[#2A1810]/10 space-y-3">
-                    <div className="w-14 h-14 rounded-full bg-[#F3EDE4] text-[#C8782A] flex items-center justify-center mx-auto text-2xl">
-                      <FiMessageSquare />
-                    </div>
-                    <h3 className="font-display text-lg font-medium text-[#2A1810]">
-                      No Leads Match Your Filter
-                    </h3>
-                    <p className="text-xs text-[#4A2C1A]/70 max-w-md mx-auto">
-                      {leads.length === 0
-                        ? "When prospective clients submit inquiries on the contact form, their contact details and requirements will appear here in real-time."
-                        : "Try selecting another status tab or clearing your search keywords."}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredLeads.map((lead) => {
-                      const initials = lead.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .substring(0, 2)
-                        .toUpperCase();
-
-                      const formattedDate = new Date(lead.createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      });
-
-                      const cleanPhone = lead.phone.replace(/[^0-9]/g, "");
-                      const waLink = `https://wa.me/${cleanPhone.startsWith("91") ? cleanPhone : "91" + cleanPhone}?text=Hi%20${encodeURIComponent(
-                        lead.name
-                      )}%2C%20thank%20you%20for%20contacting%20Nivoseas%20Lighting.%20I%20am%20following%20up%20on%20your%20inquiry.`;
-
-                      return (
-                        <div
-                          key={lead.id}
-                          className="bg-white rounded-2xl p-6 border border-[#2A1810]/10 shadow-sm hover:shadow-md transition-all space-y-4"
-                        >
-                          {/* Top Row: Name, Date, Status */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#2A1810]/5">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-[#C8782A]/15 text-[#C8782A] font-bold text-xs flex items-center justify-center shrink-0">
-                                {initials || "LD"}
-                              </div>
-                              <div>
-                                <h4 className="font-display text-base font-semibold text-[#2A1810]">
-                                  {lead.name}
-                                </h4>
-                                <div className="flex items-center gap-2 text-[11px] text-[#4A2C1A]/60">
-                                  <FiCalendar className="text-[10px]" />
-                                  <span>{formattedDate}</span>
-                                  <span>•</span>
-                                  <span className="capitalize">{lead.source?.replace("-", " ") || "Website"}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Status Selector */}
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] uppercase tracking-wider text-[#4A2C1A]/60 font-semibold">
-                                Status:
-                              </span>
-                              <select
-                                value={lead.status}
-                                onChange={(e) =>
-                                  handleUpdateLeadStatus(lead.id, e.target.value as Lead["status"])
-                                }
-                                className={`text-xs font-semibold px-3 py-1.5 rounded-full border cursor-pointer focus:outline-none ${lead.status === "new"
-                                    ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                                    : lead.status === "contacted"
-                                      ? "bg-blue-50 text-blue-800 border-blue-300"
-                                      : lead.status === "in-progress"
-                                        ? "bg-amber-50 text-amber-800 border-amber-300"
-                                        : "bg-gray-100 text-gray-800 border-gray-300"
-                                  }`}
-                              >
-                                <option value="new">● New Inquiry</option>
-                                <option value="contacted">● Contacted</option>
-                                <option value="in-progress">● In Progress</option>
-                                <option value="closed">● Closed</option>
-                              </select>
-                            </div>
+                  return (
+                    <div
+                      key={lead.id}
+                      className="bg-white rounded-2xl p-6 border border-[#2A1810]/10 shadow-sm hover:shadow-md transition-all space-y-4"
+                    >
+                      {/* Top Row: Name, Date, Status */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#2A1810]/5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#C8782A]/15 text-[#C8782A] font-bold text-xs flex items-center justify-center shrink-0">
+                            {initials || "LD"}
                           </div>
-
-                          {/* Contact Info & Metadata */}
-                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs">
-                            <a
-                              href={`tel:${lead.phone}`}
-                              className="font-medium text-[#2A1810] hover:text-[#C8782A] flex items-center gap-1.5 bg-[#F3EDE4]/40 px-3 py-1 rounded-lg"
-                            >
-                              <FiPhone className="text-xs text-[#C8782A]" />
-                              <span>{lead.phone}</span>
-                            </a>
-
-                            {lead.email && (
-                              <a
-                                href={`mailto:${lead.email}`}
-                                className="font-medium text-[#2A1810] hover:text-[#C8782A] flex items-center gap-1.5 bg-[#F3EDE4]/40 px-3 py-1 rounded-lg"
-                              >
-                                <FiMail className="text-xs text-[#C8782A]" />
-                                <span>{lead.email}</span>
-                              </a>
-                            )}
-
-                            {lead.projectType && (
-                              <span className="font-semibold text-[#C8782A] bg-[#C8782A]/10 px-3 py-1 rounded-lg">
-                                {lead.projectType}
-                              </span>
-                            )}
-
-                            {lead.productName && (
-                              <span className="font-medium text-[#2A1810]/70 bg-gray-100 px-3 py-1 rounded-lg">
-                                Product: {lead.productName}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Lead Message / Requirements */}
-                          {lead.message && (
-                            <div className="p-3.5 rounded-xl bg-[#F3EDE4]/30 border border-[#2A1810]/8 text-xs text-[#2A1810]/85 leading-relaxed">
-                              <span className="font-semibold text-[#4A2C1A]/70 block text-[10px] uppercase tracking-wider mb-1">
-                                Customer Note:
-                              </span>
-                              {lead.message}
+                          <div>
+                            <h4 className="font-display text-base font-semibold text-[#2A1810]">
+                              {lead.name}
+                            </h4>
+                            <div className="flex items-center gap-2 text-[11px] text-[#4A2C1A]/60">
+                              <FiCalendar className="text-[10px]" />
+                              <span>{formattedDate}</span>
+                              <span>•</span>
+                              <span className="capitalize">{lead.source?.replace("-", " ") || "Website"}</span>
                             </div>
-                          )}
-
-                          {/* Action Toolbar */}
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={waLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-3d text-[11px] font-semibold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center gap-1.5"
-                              >
-                                <FiMessageSquare className="text-xs" />
-                                <span>Chat on WhatsApp</span>
-                              </a>
-
-                              <a
-                                href={`tel:${lead.phone}`}
-                                className="btn-3d btn-3d-outline text-[11px] font-semibold px-4 py-2 rounded-xl inline-flex items-center gap-1.5"
-                              >
-                                <FiPhone className="text-xs" />
-                                <span>Direct Call</span>
-                              </a>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteLead(lead.id)}
-                              className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-                              title="Delete Lead"
-                            >
-                              <FiTrash2 className="text-sm" />
-                              <span className="hidden sm:inline">Delete</span>
-                            </button>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
 
-                {/* Quick Concierge Info Cards at Bottom */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#2A1810]/10">
-                  <div className="bg-white rounded-3xl p-6 border border-[#2A1810]/10 shadow-sm space-y-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-                      <FiMessageSquare />
-                    </div>
-                      <h3 className="font-display text-base text-[#2A1810] font-semibold">WhatsApp Official Line</h3>
-                      <p className="text-xs text-[#4A2C1A]/70">+91 99901 79666</p>
-                      <a
-                        href="https://wa.me/919990179666"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-3d btn-3d-dark text-xs px-4 py-2 rounded-full inline-flex items-center gap-2"
-                      >
-                        <span>Open WhatsApp Web</span>
-                      </a>
-                  </div>
-
-                    <div className="bg-white rounded-3xl p-6 border border-[#2A1810]/10 shadow-sm space-y-3">
-                      <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl">
-                        <FiPhone />
+                        {/* Status Selector */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] uppercase tracking-wider text-[#4A2C1A]/60 font-semibold">
+                            Status:
+                          </span>
+                          <select
+                            value={lead.status}
+                            onChange={(e) =>
+                              handleUpdateLeadStatus(lead.id, e.target.value as Lead["status"])
+                            }
+                            className={`text-xs font-semibold px-3 py-1.5 rounded-full border cursor-pointer focus:outline-none ${lead.status === "new"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                              : lead.status === "contacted"
+                                ? "bg-blue-50 text-blue-800 border-blue-300"
+                                : lead.status === "in-progress"
+                                  ? "bg-amber-50 text-amber-800 border-amber-300"
+                                  : "bg-gray-100 text-gray-800 border-gray-300"
+                              }`}
+                          >
+                            <option value="new">● New Inquiry</option>
+                            <option value="contacted">● Contacted</option>
+                            <option value="in-progress">● In Progress</option>
+                            <option value="closed">● Closed</option>
+                          </select>
+                        </div>
                       </div>
-                        <h3 className="font-display text-base text-[#2A1810] font-semibold">Sector 104 Experience Center</h3>
-                        <p className="text-xs text-[#4A2C1A]/70">Sector 104, Noida, Uttar Pradesh 201301</p>
+
+                      {/* Contact Info & Metadata */}
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs">
                         <a
-                          href="mailto:nivoseasLLP@gmail.com"
-                          className="btn-3d btn-3d-outline text-xs px-4 py-2 rounded-full inline-flex items-center gap-2"
+                          href={`tel:${lead.phone}`}
+                          className="font-medium text-[#2A1810] hover:text-[#C8782A] flex items-center gap-1.5 bg-[#F3EDE4]/40 px-3 py-1 rounded-lg"
                         >
-                          <span>Compose Direct Mail</span>
+                          <FiPhone className="text-xs text-[#C8782A]" />
+                          <span>{lead.phone}</span>
                         </a>
-                    </div>
-                  </div>
-                </div>
-            )}
-              </main>
 
-              {/* Slide-over Inspection Drawer */}
-              {selectedProduct && (
-                <div className="fixed inset-0 z-50 flex justify-end">
-                  <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setSelectedProduct(null)} />
-                  <div className="relative w-full max-w-md bg-white h-full shadow-2xl z-10 flex flex-col justify-between overflow-y-auto p-6 sm:p-8 border-l border-[#2A1810]/10">
-                    <div>
-                      <div className="flex items-center justify-between pb-4 border-b border-[#2A1810]/10 mb-6">
-                        <span className="text-xs uppercase font-mono tracking-wider font-semibold text-[#C8782A]">Fixture Inspection</span>
-                        <button onClick={() => setSelectedProduct(null)} className="p-1 rounded-lg text-[#2A1810]/60 hover:text-[#2A1810]">
-                          <FiX className="text-lg" />
-                        </button>
+                        {lead.email && (
+                          <a
+                            href={`mailto:${lead.email}`}
+                            className="font-medium text-[#2A1810] hover:text-[#C8782A] flex items-center gap-1.5 bg-[#F3EDE4]/40 px-3 py-1 rounded-lg"
+                          >
+                            <FiMail className="text-xs text-[#C8782A]" />
+                            <span>{lead.email}</span>
+                          </a>
+                        )}
+
+                        {lead.projectType && (
+                          <span className="font-semibold text-[#C8782A] bg-[#C8782A]/10 px-3 py-1 rounded-lg">
+                            {lead.projectType}
+                          </span>
+                        )}
+
+                        {lead.productName && (
+                          <span className="font-medium text-[#2A1810]/70 bg-gray-100 px-3 py-1 rounded-lg">
+                            Product: {lead.productName}
+                          </span>
+                        )}
                       </div>
 
-                      <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#F6F2EC] mb-5 border border-[#2A1810]/10">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={selectedProduct.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={selectedProduct.name} className="w-full h-full object-cover" />
-                      </div>
-
-                      {selectedProduct.images.length > 1 && (
-                        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
-                          {selectedProduct.images.map((img, i) => (
-                            <div key={i} className="w-12 h-12 rounded-lg overflow-hidden border border-[#2A1810]/10 shrink-0 bg-white">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={img} alt={`Gallery ${i} `} className="w-full h-full object-cover" />
-                            </div>
-                          ))}
+                      {/* Lead Message / Requirements */}
+                      {lead.message && (
+                        <div className="p-3.5 rounded-xl bg-[#F3EDE4]/30 border border-[#2A1810]/8 text-xs text-[#2A1810]/85 leading-relaxed">
+                          <span className="font-semibold text-[#4A2C1A]/70 block text-[10px] uppercase tracking-wider mb-1">
+                            Customer Note:
+                          </span>
+                          {lead.message}
                         </div>
                       )}
 
-                      <div className="space-y-2 text-xs">
-                        <span className="text-[11px] uppercase tracking-wider font-semibold text-[#C8782A]">{selectedProduct.category}</span>
-                        <h3 className="font-display text-xl font-semibold text-[#2A1810]">{selectedProduct.name}</h3>
-                        {selectedProduct.tagline && <p className="text-xs text-[#4A2C1A]/70 italic">&ldquo;{selectedProduct.tagline}&rdquo;</p>}
-                        {selectedProduct.description && (
-                          <p className="text-xs text-[#4A2C1A] leading-relaxed pt-2 border-t border-[#2A1810]/5">
-                            {selectedProduct.description}
-                          </p>
+                      {/* Action Toolbar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={waLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-3d text-[11px] font-semibold px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center gap-1.5"
+                          >
+                            <FiMessageSquare className="text-xs" />
+                            <span>Chat on WhatsApp</span>
+                          </a>
+
+                          <a
+                            href={`tel:${lead.phone}`}
+                            className="btn-3d btn-3d-outline text-[11px] font-semibold px-4 py-2 rounded-xl inline-flex items-center gap-1.5"
+                          >
+                            <FiPhone className="text-xs" />
+                            <span>Direct Call</span>
+                          </a>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLead(lead.id)}
+                          className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                          title="Delete Lead"
+                        >
+                          <FiTrash2 className="text-sm" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Quick Concierge Info Cards at Bottom */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-[#2A1810]/10">
+              <div className="bg-white rounded-3xl p-6 border border-[#2A1810]/10 shadow-sm space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                  <FiMessageSquare />
+                </div>
+                <h3 className="font-display text-base text-[#2A1810] font-semibold">WhatsApp Official Line</h3>
+                <p className="text-xs text-[#4A2C1A]/70">+91 99901 79666</p>
+                <a
+                  href="https://wa.me/919990179666"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-3d btn-3d-dark text-xs px-4 py-2 rounded-full inline-flex items-center gap-2"
+                >
+                  <span>Open WhatsApp Web</span>
+                </a>
+              </div>
+
+              <div className="bg-white rounded-3xl p-6 border border-[#2A1810]/10 shadow-sm space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center text-xl">
+                  <FiPhone />
+                </div>
+                <h3 className="font-display text-base text-[#2A1810] font-semibold">Sector 104 Experience Center</h3>
+                <p className="text-xs text-[#4A2C1A]/70">Sector 104, Noida, Uttar Pradesh 201301</p>
+                <a
+                  href="mailto:nivoseasLLP@gmail.com"
+                  className="btn-3d btn-3d-outline text-xs px-4 py-2 rounded-full inline-flex items-center gap-2"
+                >
+                  <span>Compose Direct Mail</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* View: Category Images */}
+        {activeView === "collections" && (
+          <div className="p-6 lg:p-10 space-y-8 max-w-5xl">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">
+                  Category Images
+                </h1>
+                <p className="text-xs text-[#4A2C1A]/70 mt-0.5">
+                  Manage hero images shown on the Collections page and Homepage cards. Changes take effect immediately.
+                </p>
+              </div>
+              <button
+                onClick={fetchCatImages}
+                disabled={catImagesLoading}
+                className="btn-3d btn-3d-outline text-xs px-3.5 py-2 rounded-full flex items-center gap-1.5 shrink-0"
+              >
+                <FiRefreshCw className={`text-xs ${catImagesLoading ? "animate-spin" : ""}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            {catImagesLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <FiRefreshCw className="animate-spin text-[#C8782A] text-2xl" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {catImages.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="bg-white rounded-3xl border border-[#2A1810]/10 shadow-sm overflow-hidden"
+                  >
+                    {/* Image preview */}
+                    <div className="relative h-44 bg-[#F6F2EC] overflow-hidden">
+                      {cat.heroImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={cat.heroImage}
+                          alt={cat.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[#2A1810]/30">
+                          <FiImage className="text-4xl" />
+                        </div>
+                      )}
+                      {/* Overlay badges */}
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider bg-black/50 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">
+                          {cat.name}
+                        </span>
+                        {cat.hasOverride ? (
+                          <span className="text-[10px] font-mono uppercase tracking-wider bg-[#C8782A]/90 text-white px-2.5 py-1 rounded-full">
+                            Custom
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono uppercase tracking-wider bg-white/70 text-[#4A2C1A] px-2.5 py-1 rounded-full">
+                            Default
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="pt-6 border-t border-[#2A1810]/10 space-y-2">
-                      <button
-                        onClick={() => startEditing(selectedProduct)}
-                        className="btn-3d btn-3d-amber w-full py-2.5 text-center text-xs rounded-xl flex items-center justify-center gap-2 font-medium"
-                      >
-                        <FiEdit2 className="text-sm" /> Edit Specifications & Gallery
-                      </button>
-                      <div className="flex items-center gap-2">
-                        <Link href={`/ products / ${selectedProduct.slug} `} target="_blank" className="btn-3d btn-3d-dark flex-1 py-2.5 text-center text-xs rounded-xl">
-                          View Public Page ↗
-                        </Link>
-                        <button onClick={() => handleDeleteProduct(selectedProduct.id, selectedProduct.name)} className="btn-3d btn-3d-outline text-red-600 border-red-200 py-2.5 px-4 text-xs rounded-xl">
-                          Delete
+                    {/* Controls */}
+                    <div className="p-5 space-y-3">
+                      {/* URL input + Save */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={catUrlInputs[cat.id] ?? ""}
+                          onChange={(e) =>
+                            setCatUrlInputs((prev) => ({ ...prev, [cat.id]: e.target.value }))
+                          }
+                          placeholder="Paste image URL or upload below"
+                          className="flex-1 text-xs px-3 py-2 rounded-xl border border-[#2A1810]/15 bg-[#F6F2EC] text-[#2A1810] focus:outline-none focus:border-[#C8782A] placeholder:text-[#4A2C1A]/40"
+                        />
+                        <button
+                          onClick={() => saveCatImage(cat.id, catUrlInputs[cat.id] ?? "")}
+                          disabled={!catUrlInputs[cat.id]?.trim()}
+                          className="btn-3d btn-3d-dark text-xs px-3.5 py-2 rounded-xl shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Save
                         </button>
                       </div>
+
+                      {/* Upload from device */}
+                      <label className="relative flex items-center gap-2 cursor-pointer group">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleCatFileUpload(cat.id, file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <span
+                          className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-medium border border-dashed transition-all ${catUploadingSlot === cat.id
+                              ? "border-[#C8782A] text-[#C8782A] bg-[#C8782A]/5"
+                              : "border-[#2A1810]/20 text-[#4A2C1A]/70 hover:border-[#C8782A] hover:text-[#C8782A]"
+                            }`}
+                        >
+                          {catUploadingSlot === cat.id ? (
+                            <>
+                              <FiRefreshCw className="animate-spin text-xs" />
+                              Uploading to Cloudinary…
+                            </>
+                          ) : (
+                            <>
+                              <FiUploadCloud className="text-sm" />
+                              Upload from device
+                            </>
+                          )}
+                        </span>
+                      </label>
+
+                      {/* Reset to default */}
+                      {cat.hasOverride && (
+                        <button
+                          onClick={() => resetCatImage(cat.id)}
+                          className="w-full flex items-center justify-center gap-1.5 text-xs text-[#4A2C1A]/60 hover:text-red-600 transition-colors py-1"
+                        >
+                          <FiRotateCcw className="text-xs" />
+                          Reset to default image
+                        </button>
+                      )}
+
+                      {/* Default image note */}
+                      {!cat.hasOverride && cat.defaultImage && (
+                        <p className="text-[10px] text-[#4A2C1A]/40 text-center">
+                          Using default: <span className="font-mono">{cat.defaultImage.length > 40 ? cat.defaultImage.slice(0, 40) + "…" : cat.defaultImage}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {/* Info note */}
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 flex gap-3">
+              <FiAlertCircle className="text-amber-500 text-base shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold mb-1">How it works</p>
+                <p>Images saved here override the defaults in <code className="bg-amber-100 px-1 rounded">categories.ts</code>. Changes are stored in MongoDB and reflected immediately on the Collections page and Homepage category cards. Upload to Cloudinary for the best performance.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* Slide-over Inspection Drawer */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setSelectedProduct(null)} />
+          <div className="relative w-full max-w-md bg-white h-full shadow-2xl z-10 flex flex-col justify-between overflow-y-auto p-6 sm:p-8 border-l border-[#2A1810]/10">
+            <div>
+              <div className="flex items-center justify-between pb-4 border-b border-[#2A1810]/10 mb-6">
+                <span className="text-xs uppercase font-mono tracking-wider font-semibold text-[#C8782A]">Fixture Inspection</span>
+                <button onClick={() => setSelectedProduct(null)} className="p-1 rounded-lg text-[#2A1810]/60 hover:text-[#2A1810]">
+                  <FiX className="text-lg" />
+                </button>
+              </div>
+
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-[#F6F2EC] mb-5 border border-[#2A1810]/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selectedProduct.images[0] || "/Minimalist Luxury Chandelier Interior.webp"} alt={selectedProduct.name} className="w-full h-full object-cover" />
+              </div>
+
+              {selectedProduct.images.length > 1 && (
+                <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+                  {selectedProduct.images.map((img, i) => (
+                    <div key={i} className="w-12 h-12 rounded-lg overflow-hidden border border-[#2A1810]/10 shrink-0 bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt={`Gallery ${i} `} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
                 </div>
               )}
+
+              <div className="space-y-2 text-xs">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-[#C8782A]">{selectedProduct.category}</span>
+                <h3 className="font-display text-xl font-semibold text-[#2A1810]">{selectedProduct.name}</h3>
+                {selectedProduct.tagline && <p className="text-xs text-[#4A2C1A]/70 italic">&ldquo;{selectedProduct.tagline}&rdquo;</p>}
+                {selectedProduct.description && (
+                  <p className="text-xs text-[#4A2C1A] leading-relaxed pt-2 border-t border-[#2A1810]/5">
+                    {selectedProduct.description}
+                  </p>
+                )}
+              </div>
             </div>
-            );
+
+            <div className="pt-6 border-t border-[#2A1810]/10 space-y-2">
+              <button
+                onClick={() => startEditing(selectedProduct)}
+                className="btn-3d btn-3d-amber w-full py-2.5 text-center text-xs rounded-xl flex items-center justify-center gap-2 font-medium"
+              >
+                <FiEdit2 className="text-sm" /> Edit Specifications & Gallery
+              </button>
+              <div className="flex items-center gap-2">
+                <Link href={`/ products / ${selectedProduct.slug} `} target="_blank" className="btn-3d btn-3d-dark flex-1 py-2.5 text-center text-xs rounded-xl">
+                  View Public Page ↗
+                </Link>
+                <button onClick={() => handleDeleteProduct(selectedProduct.id, selectedProduct.name)} className="btn-3d btn-3d-outline text-red-600 border-red-200 py-2.5 px-4 text-xs rounded-xl">
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

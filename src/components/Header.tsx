@@ -150,7 +150,7 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/#collections"
+                href="/collections"
                 className="relative group text-[#2A1810] hover:text-[#C8782A] text-[14px] font-medium py-2"
               >
                 <span>Collections</span>
@@ -398,7 +398,7 @@ export default function Header() {
               </Link>
 
               <Link
-                href="/#collections"
+                href="/collections"
                 className="block py-2 text-[#2A1810] text-base font-bold border-b border-[#2A1810]/8"
                 onClick={() => setIsMobileMenuOpen(false)}
               >

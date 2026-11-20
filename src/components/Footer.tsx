@@ -39,7 +39,7 @@ const COLLECTIONS = [
 const QUICK_LINKS = [
   { label: "Home", href: "/" },
   { label: "About Us", href: "/about" },
-  { label: "Collections", href: "/#collections" },
+  { label: "Collections", href: "/collections" },
   { label: "Catalogue", href: "/products" },
   { label: "Contact Atelier", href: "/contact" },
 ];
