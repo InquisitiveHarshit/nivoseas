@@ -63,7 +63,7 @@ export default function Collections() {
                   ${isLarge ? "lg:col-span-6 h-[320px] sm:h-[360px]" : "lg:col-span-6 h-[260px] sm:h-[300px]"}
                 `}
               >
-                {/* Clean, clear background image with no milky white tint */}
+                {/* 100% crystal-clear background image by default, tint only appears on hover */}
                 {cat.heroImage && (
                   <div className="absolute inset-0 z-0 overflow-hidden rounded-[28px]">
                     <Image
@@ -72,10 +72,10 @@ export default function Collections() {
                       fill
                       unoptimized
                       sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
+                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-100"
                     />
-                    {/* Subtle bottom gradient vignette only behind bottom text to preserve crystal/lighting clarity */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#EDE5DA]/85 via-transparent to-black/15" />
+                    {/* Zero tint by default — warm overlay smoothly fades in ONLY on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#EDE5DA]/80 via-[#EDE5DA]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                   </div>
                 )}
 
