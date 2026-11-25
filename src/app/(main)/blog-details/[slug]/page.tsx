@@ -10,16 +10,6 @@ interface BlogDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  try {
-    await connectDB();
-    const blogs = await Blog.find({ isPublished: true }).select("slug").lean();
-    return blogs.map((b) => ({ slug: b.slug }));
-  } catch {
-    return [];
-  }
-}
-
 export async function generateMetadata({
   params,
 }: BlogDetailPageProps): Promise<Metadata> {
