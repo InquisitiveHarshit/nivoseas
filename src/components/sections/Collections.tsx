@@ -57,13 +57,13 @@ export default function Collections() {
                 href={`/products?category=${cat.slug}`}
                 className={`
                   group relative overflow-hidden rounded-[28px] flex flex-col justify-between
-                  bg-[#EDE5DA] hover:bg-[#e4dbce]
-                  border border-[rgba(42,24,16,0.08)] hover:border-[rgba(42,24,16,0.2)]
-                  transition-all duration-300 hover:shadow-xl hover:shadow-[#2A1810]/8
+                  bg-[#1C120C] hover:bg-[#150D08]
+                  border border-white/10 hover:border-white/20
+                  transition-all duration-300 hover:shadow-2xl hover:shadow-black/30
                   ${isLarge ? "lg:col-span-6 h-[320px] sm:h-[360px]" : "lg:col-span-6 h-[260px] sm:h-[300px]"}
                 `}
               >
-                {/* 100% crystal-clear background image by default, tint only appears on hover */}
+                {/* Background image with cinematic dark gradient vignette */}
                 {cat.heroImage && (
                   <div className="absolute inset-0 z-0 overflow-hidden rounded-[28px]">
                     <Image
@@ -72,48 +72,52 @@ export default function Collections() {
                       fill
                       unoptimized
                       sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-100"
+                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-70 group-hover:opacity-85"
                     />
-                    {/* Zero tint by default — warm overlay smoothly fades in ONLY on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#EDE5DA]/80 via-[#EDE5DA]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    {/* Dark gradient overlay — deep espresso at the bottom for high contrast text */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#150D08]/95 via-[#150D08]/50 to-black/25 pointer-events-none" />
                   </div>
                 )}
 
-                {/* Product count pill */}
+                {/* Product count pill & Arrow button */}
                 <div className="relative z-10 p-7 pb-0 flex items-start justify-between">
                   <span
-                    className="text-[11px] font-medium uppercase tracking-wider px-3 py-1 rounded-full border"
-                    style={{ color: accent, borderColor: `${accent}44`, background: `${accent}11` }}
+                    className="text-[11px] font-medium uppercase tracking-wider px-3 py-1 rounded-full border backdrop-blur-md"
+                    style={{
+                      color: "#E5C287",
+                      borderColor: "rgba(217, 180, 108, 0.35)",
+                      background: "rgba(21, 13, 8, 0.65)",
+                    }}
                   >
                     {cat.productCount}+ products
                   </span>
-                  <span className="w-9 h-9 rounded-full border border-[rgba(42,24,16,0.12)] flex items-center justify-center group-hover:border-[rgba(42,24,16,0.3)] group-hover:rotate-45 transition-all duration-300">
-                    <svg viewBox="0 0 12 12" fill="none" stroke="#2A1810" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true">
+                  <span className="w-9 h-9 rounded-full border border-white/20 bg-black/30 backdrop-blur-md flex items-center justify-center group-hover:border-[#D9B46C] group-hover:bg-[#C8782A] group-hover:rotate-45 transition-all duration-300">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="#F3EDE4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3" aria-hidden="true">
                       <path d="M2 10 L10 2 M4 2 L10 2 L10 8" />
                     </svg>
                   </span>
                 </div>
 
-                {/* Text block — dark text, original style */}
+                {/* Text block — Golden eyebrow, crisp white display heading, golden/warm white tags */}
                 <div className="relative z-10 p-7 pt-4">
-                  <h3 className="font-display text-[clamp(1.4rem,2.8vw,2.1rem)] font-normal leading-[1.0] tracking-[-0.02em] text-[#2A1810] mb-2">
-                    {cat.name}
-                  </h3>
-                  <p className="text-[13px] font-normal text-[#6b5f55] leading-relaxed line-clamp-2">
+                  <p className="text-[11px] sm:text-[12px] uppercase tracking-[0.14em] text-[#D9B46C] font-mono font-medium mb-1 drop-shadow-sm">
                     {cat.tagline}
                   </p>
+                  <h3 className="font-display text-[clamp(1.5rem,3vw,2.3rem)] font-normal leading-[1.05] tracking-[-0.02em] text-white mb-3 drop-shadow-md">
+                    {cat.name}
+                  </h3>
                   {cat.subcategories && cat.subcategories.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-4">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                       {cat.subcategories.slice(0, 3).map((sub) => (
                         <span
                           key={sub.name}
-                          className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-[rgba(42,24,16,0.06)] text-[#4A2C1A] border border-[rgba(42,24,16,0.08)]"
+                          className="text-[10.5px] font-medium px-2.5 py-1 rounded-full bg-white/10 text-white/90 border border-white/15 backdrop-blur-xs group-hover:border-white/30 transition-colors"
                         >
                           {sub.name}
                         </span>
                       ))}
                       {cat.subcategories.length > 3 && (
-                        <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-[rgba(42,24,16,0.06)] text-[#4A2C1A]">
+                        <span className="text-[10.5px] font-medium px-2.5 py-1 rounded-full bg-white/10 text-[#D9B46C] border border-white/15 backdrop-blur-xs">
                           +{cat.subcategories.length - 3} more
                         </span>
                       )}
