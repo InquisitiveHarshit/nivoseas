@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import slugify from "slugify";
@@ -14,16 +15,27 @@ import {
   FiTrash2,
   FiExternalLink,
 } from "react-icons/fi";
-import TiptapEditor from "@/components/admin/TiptapEditor";
 import GalleryPickerModal from "@/components/admin/GalleryPickerModal";
 import FaqEditor from "@/components/admin/FaqEditor";
 import type { IFaqItem } from "@/models/Blog";
+
+const TiptapEditor = dynamic(
+  () => import("@/components/admin/TiptapEditor"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[360px] rounded-2xl border border-[#2A1810]/15 bg-[#F6F2EC]/50 p-5 text-xs text-[#4A2C1A]/60 flex items-center justify-center">
+        Loading editor...
+      </div>
+    ),
+  }
+);
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
 }
 
-export default function EditBlogPage({
+function EditBlogContent({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -616,5 +628,23 @@ export default function EditBlogPage({
         }}
       />
     </div>
+  );
+}
+
+export default function EditBlogPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F6F2EC] flex items-center justify-center">
+          <FiRefreshCw className="animate-spin text-2xl text-[#C8782A]" />
+        </div>
+      }
+    >
+      <EditBlogContent params={params} />
+    </Suspense>
   );
 }

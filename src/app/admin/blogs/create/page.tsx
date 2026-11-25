@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import slugify from "slugify";
@@ -12,10 +13,21 @@ import {
   FiRefreshCw,
   FiCheck,
 } from "react-icons/fi";
-import TiptapEditor from "@/components/admin/TiptapEditor";
 import GalleryPickerModal from "@/components/admin/GalleryPickerModal";
 import FaqEditor from "@/components/admin/FaqEditor";
 import type { IFaqItem } from "@/models/Blog";
+
+const TiptapEditor = dynamic(
+  () => import("@/components/admin/TiptapEditor"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[360px] rounded-2xl border border-[#2A1810]/15 bg-[#F6F2EC]/50 p-5 text-xs text-[#4A2C1A]/60 flex items-center justify-center">
+        Loading editor...
+      </div>
+    ),
+  }
+);
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
@@ -281,11 +293,10 @@ export default function CreateBlogPage() {
                 <button
                   type="button"
                   onClick={() => setCoverSource("upload")}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                    coverSource === "upload"
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${coverSource === "upload"
                       ? "bg-[#C8782A] text-white shadow-xs"
                       : "text-[#4A2C1A] hover:bg-white/60"
-                  }`}
+                    }`}
                 >
                   Upload File
                 </button>
@@ -295,11 +306,10 @@ export default function CreateBlogPage() {
                     setCoverSource("gallery");
                     setIsGalleryOpen(true);
                   }}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                    coverSource === "gallery"
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${coverSource === "gallery"
                       ? "bg-[#C8782A] text-white shadow-xs"
                       : "text-[#4A2C1A] hover:bg-white/60"
-                  }`}
+                    }`}
                 >
                   Pick from Gallery
                 </button>
@@ -407,9 +417,8 @@ export default function CreateBlogPage() {
                   Meta Title
                 </label>
                 <span
-                  className={`text-[10px] font-mono ${
-                    metaTitle.length > 60 ? "text-red-600 font-bold" : "text-[#4A2C1A]/50"
-                  }`}
+                  className={`text-[10px] font-mono ${metaTitle.length > 60 ? "text-red-600 font-bold" : "text-[#4A2C1A]/50"
+                    }`}
                 >
                   {metaTitle.length} / 60
                 </span>
@@ -429,9 +438,8 @@ export default function CreateBlogPage() {
                   Meta Description
                 </label>
                 <span
-                  className={`text-[10px] font-mono ${
-                    metaDescription.length > 160 ? "text-red-600 font-bold" : "text-[#4A2C1A]/50"
-                  }`}
+                  className={`text-[10px] font-mono ${metaDescription.length > 160 ? "text-red-600 font-bold" : "text-[#4A2C1A]/50"
+                    }`}
                 >
                   {metaDescription.length} / 160
                 </span>
