@@ -315,6 +315,14 @@ export default function Header() {
               </Link>
 
               <Link
+                href="/blog"
+                className="relative group text-[#2A1810] hover:text-[#C8782A] text-[14px] font-medium py-2"
+              >
+                <span>Journal</span>
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[2px] bg-[#C8782A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></div>
+              </Link>
+
+              <Link
                 href="/contact"
                 className="relative group text-[#2A1810] hover:text-[#C8782A] text-[14px] font-medium py-2"
               >
@@ -411,6 +419,14 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 About Us
+              </Link>
+
+              <Link
+                href="/blog"
+                className="block py-2 text-[#2A1810] text-base font-bold border-b border-[#2A1810]/8"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Journal &amp; Insights
               </Link>
 
               <Link

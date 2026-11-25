@@ -63,7 +63,7 @@ export default function Collections() {
                   ${isLarge ? "lg:col-span-6 h-[320px] sm:h-[360px]" : "lg:col-span-6 h-[260px] sm:h-[300px]"}
                 `}
               >
-                {/* Background image — visible but card stays warm/light */}
+                {/* Clean, clear background image with no milky white tint */}
                 {cat.heroImage && (
                   <div className="absolute inset-0 z-0 overflow-hidden rounded-[28px]">
                     <Image
@@ -72,10 +72,10 @@ export default function Collections() {
                       fill
                       unoptimized
                       sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-50 group-hover:opacity-60"
+                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 opacity-90 group-hover:opacity-100"
                     />
-                    {/* Minimal warm tint — just enough for text legibility */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#EDE5DA]/90 via-[#EDE5DA]/50 to-transparent" />
+                    {/* Subtle bottom gradient vignette only behind bottom text to preserve crystal/lighting clarity */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#EDE5DA]/85 via-transparent to-black/15" />
                   </div>
                 )}
 

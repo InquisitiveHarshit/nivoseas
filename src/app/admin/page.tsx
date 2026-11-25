@@ -62,7 +62,7 @@ const DEFAULT_IMAGES = [
 ];
 
 export default function AdminPage() {
-  const [activeView, setActiveView] = useState<"overview" | "inventory" | "add" | "enquiry" | "collections">("overview");
+  const [activeView, setActiveView] = useState<"overview" | "inventory" | "add" | "enquiry" | "collections" | "blogs">("overview");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -225,6 +225,36 @@ export default function AdminPage() {
   const [catImagesLoading, setCatImagesLoading] = useState(false);
   const [catUploadingSlot, setCatUploadingSlot] = useState<string | null>(null);
   const [catUrlInputs, setCatUrlInputs] = useState<Record<string, string>>({});
+
+  // Blog Articles state (for Blogs admin tab)
+  interface AdminBlogSummary {
+    _id: string;
+    title: string;
+    slug: string;
+    category?: string;
+    isPublished: boolean;
+    publishedAt?: string;
+    createdAt: string;
+    coverImage?: string;
+  }
+  const [adminBlogs, setAdminBlogs] = useState<AdminBlogSummary[]>([]);
+  const [adminBlogsLoading, setAdminBlogsLoading] = useState(false);
+  const [blogSearchTerm, setBlogSearchTerm] = useState("");
+
+  const fetchAdminBlogs = async () => {
+    setAdminBlogsLoading(true);
+    try {
+      const res = await fetch("/api/blogs?published=false");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setAdminBlogs(json.data);
+      }
+    } catch {
+      console.warn("Failed to load blog posts in admin.");
+    } finally {
+      setAdminBlogsLoading(false);
+    }
+  };
 
   const fetchCatImages = async () => {
     setCatImagesLoading(true);
@@ -409,6 +439,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeView === "collections" && catImages.length === 0) {
       fetchCatImages();
+    }
+    if (activeView === "blogs" && adminBlogs.length === 0) {
+      fetchAdminBlogs();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView]);
@@ -866,6 +899,27 @@ export default function AdminPage() {
               >
                 <FiImage className="text-sm shrink-0" />
                 <span>Category Images</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingId(null);
+                  setActiveView("blogs");
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${activeView === "blogs"
+                  ? "bg-[#C8782A] text-white shadow-md shadow-[#C8782A]/20"
+                  : "text-[#F3EDE4]/70 hover:bg-white/5 hover:text-white"
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <FiLayers className="text-sm shrink-0" />
+                  <span>Blog Articles</span>
+                </div>
+                {adminBlogs.length > 0 && (
+                  <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full font-mono">
+                    {adminBlogs.length}
+                  </span>
+                )}
               </button>
             </nav>
           </div >
@@ -2389,6 +2443,165 @@ export default function AdminPage() {
                 <p>Images saved here override the defaults in <code className="bg-amber-100 px-1 rounded">categories.ts</code>. Changes are stored in MongoDB and reflected immediately on the Collections page and Homepage category cards. Upload to Cloudinary for the best performance.</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* View: Blog Articles */}
+        {activeView === "blogs" && (
+          <div className="p-6 lg:p-10 space-y-6 max-w-7xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="font-display text-2xl lg:text-3xl font-normal text-[#2A1810]">
+                  Blog Articles &amp; Editorial Content
+                </h1>
+                <p className="text-xs text-[#4A2C1A]/70 mt-0.5">
+                  Manage architectural articles, crystal guides, and design journal posts.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchAdminBlogs}
+                  disabled={adminBlogsLoading}
+                  className="btn-3d btn-3d-outline text-xs px-3.5 py-2 rounded-full flex items-center gap-1.5 shrink-0"
+                >
+                  <FiRefreshCw className={`text-xs ${adminBlogsLoading ? "animate-spin" : ""}`} />
+                  <span>Refresh</span>
+                </button>
+                <Link
+                  href="/admin/blogs/create"
+                  className="btn-3d btn-3d-dark text-xs px-4 py-2 rounded-full flex items-center gap-2 shrink-0"
+                >
+                  <FiPlus className="text-sm" />
+                  <span>New Post</span>
+                </Link>
+                <Link
+                  href="/admin/blogs"
+                  className="btn-3d btn-3d-amber text-xs px-4 py-2 rounded-full flex items-center gap-2 shrink-0"
+                >
+                  <span>Open Full Blog Studio ↗</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Search */}
+            <div className="max-w-md">
+              <div className="relative">
+                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4A2C1A]/40 text-xs" />
+                <input
+                  type="text"
+                  value={blogSearchTerm}
+                  onChange={(e) => setBlogSearchTerm(e.target.value)}
+                  placeholder="Filter articles by title or category..."
+                  className="w-full text-xs pl-9 pr-4 py-2 bg-white border border-[#2A1810]/15 rounded-xl text-[#2A1810] focus:outline-none focus:border-[#C8782A]"
+                />
+              </div>
+            </div>
+
+            {/* Posts Grid / Cards */}
+            {adminBlogsLoading ? (
+              <div className="py-20 flex items-center justify-center">
+                <FiRefreshCw className="animate-spin text-2xl text-[#C8782A]" />
+              </div>
+            ) : adminBlogs.length === 0 ? (
+              <div className="p-12 text-center bg-white rounded-3xl border border-[#2A1810]/10 space-y-3">
+                <FiLayers className="text-4xl mx-auto opacity-30 text-[#C8782A]" />
+                <p className="text-sm font-medium text-[#2A1810]">No articles published yet.</p>
+                <p className="text-xs text-[#4A2C1A]/60">Create your first architectural post using our rich-text Tiptap editor.</p>
+                <Link
+                  href="/admin/blogs/create"
+                  className="btn-3d btn-3d-dark text-xs px-5 py-2.5 rounded-xl inline-flex items-center gap-2 mt-2"
+                >
+                  <FiPlus />
+                  <span>Write New Article</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {adminBlogs
+                  .filter((b) => {
+                    if (!blogSearchTerm.trim()) return true;
+                    const q = blogSearchTerm.toLowerCase();
+                    return (
+                      b.title.toLowerCase().includes(q) ||
+                      (b.category && b.category.toLowerCase().includes(q))
+                    );
+                  })
+                  .map((post) => (
+                    <div
+                      key={post._id}
+                      className="bg-white rounded-3xl border border-[#2A1810]/10 overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
+                    >
+                      <div className="relative aspect-[16/10] bg-[#F6F2EC] overflow-hidden">
+                        {post.coverImage ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={post.coverImage}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#2A1810]/20 text-3xl font-display">
+                            N
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3 flex gap-1.5">
+                          {post.isPublished ? (
+                            <span className="text-[10px] font-mono uppercase tracking-wider bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-xs">
+                              Published
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full shadow-xs">
+                              Draft
+                            </span>
+                          )}
+                          {post.category && (
+                            <span className="text-[10px] font-mono uppercase tracking-wider bg-black/60 text-white px-2 py-0.5 rounded-full backdrop-blur-xs">
+                              {post.category}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                        <div>
+                          <span className="text-[10px] font-mono text-[#4A2C1A]/50 block mb-1">
+                            {post.publishedAt
+                              ? new Date(post.publishedAt).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Unpublished"}
+                          </span>
+                          <h3 className="font-semibold text-sm text-[#2A1810] line-clamp-2">
+                            {post.title}
+                          </h3>
+                        </div>
+
+                        <div className="pt-3 border-t border-[#2A1810]/8 flex items-center justify-between text-xs">
+                          <Link
+                            href={`/admin/blogs/${post.slug}`}
+                            className="text-[#C8782A] font-semibold hover:underline inline-flex items-center gap-1"
+                          >
+                            <FiEdit2 className="text-xs" /> Edit Post
+                          </Link>
+                          {post.isPublished && (
+                            <Link
+                              href={`/blog-details/${post.slug}`}
+                              target="_blank"
+                              className="text-[#4A2C1A]/70 hover:text-[#2A1810] inline-flex items-center gap-1"
+                            >
+                              <span>View</span>
+                              <FiExternalLink className="text-[10px]" />
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 

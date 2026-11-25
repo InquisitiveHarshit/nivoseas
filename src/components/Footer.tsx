@@ -41,6 +41,7 @@ const QUICK_LINKS = [
   { label: "About Us", href: "/about" },
   { label: "Collections", href: "/collections" },
   { label: "Catalogue", href: "/products" },
+  { label: "Journal & Blog", href: "/blog" },
   { label: "Contact Atelier", href: "/contact" },
 ];
 
