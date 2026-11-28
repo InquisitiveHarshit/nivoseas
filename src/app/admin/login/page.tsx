@@ -25,12 +25,12 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
       const data = await res.json();
 
       if (data.success) {
-        router.push("/admin/blogs");
+        router.push("/admin");
         router.refresh();
       } else {
         setError(data.error || "Login failed. Please check your credentials.");
@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
           />
           <h1 className="font-display text-2xl text-white">Admin Authentication</h1>
           <p className="text-xs text-[#F3EDE4]/60">
-            Sign in to manage blog posts and website content
+            Sign in to access catalogue inventory, leads, blogs &amp; site console
           </p>
         </div>
 
@@ -76,9 +76,10 @@ export default function AdminLoginPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="admin"
+                placeholder="admin@123"
                 className="w-full bg-[#1C120C] border border-white/15 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-[#C8782A]"
                 required
+                autoComplete="username"
               />
             </div>
           </div>
@@ -96,6 +97,7 @@ export default function AdminLoginPage() {
                 placeholder="••••••••••••"
                 className="w-full bg-[#1C120C] border border-white/15 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-[#C8782A]"
                 required
+                autoComplete="current-password"
               />
             </div>
           </div>

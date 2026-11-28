@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FiGrid,
   FiBox,
@@ -18,6 +19,7 @@ import {
   FiLayers,
   FiX,
   FiRefreshCw,
+  FiLogOut,
   FiArrowRight,
   FiArrowUp,
   FiArrowDown,
@@ -62,6 +64,7 @@ const DEFAULT_IMAGES = [
 ];
 
 export default function AdminPage() {
+  const router = useRouter();
   const [activeView, setActiveView] = useState<"overview" | "inventory" | "add" | "enquiry" | "collections" | "blogs">("overview");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -943,6 +946,21 @@ export default function AdminPage() {
             <span>Back to Storefront</span>
             <span>←</span>
           </Link>
+          <button
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/logout", { method: "POST" });
+              } finally {
+                router.push("/admin/login");
+                router.refresh();
+              }
+            }}
+            className="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs text-red-400/90 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <FiLogOut /> Sign Out
+            </span>
+          </button>
         </div>
       </aside >
 

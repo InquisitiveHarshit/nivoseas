@@ -6,24 +6,11 @@ import Admin from "@/models/Admin";
 import { getJwtSecret } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-async function seedDefaultAdminIfEmpty() {
-  const count = await Admin.countDocuments();
-  if (count === 0) {
-    const username = process.env.ADMIN_USERNAME || "admin";
-    const password = process.env.ADMIN_PASSWORD || "nivoseas@admin123";
-    const passwordHash = await bcrypt.hash(password, 10);
-    await Admin.create({ username, passwordHash, role: "admin" });
-  }
-}
-
 export async function POST(req: NextRequest) {
   const rl = checkRateLimit(req, { limit: 20, windowMs: 60 * 1000 });
   if (rl.response) return rl.response;
 
   try {
-    await connectDB();
-    await seedDefaultAdminIfEmpty();
-
     const body = await req.json();
     const username = typeof body.username === "string" ? body.username.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
@@ -35,7 +22,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const admin = await Admin.findOne({ username });
+    await connectDB();
+
+    // Query database directly for the user
+    const admin = await Admin.findOne({
+      username: { $regex: new RegExp(`^${username.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") },
+    });
+
     if (!admin) {
       return NextResponse.json(
         { success: false, error: "Invalid credentials." },
@@ -59,13 +52,13 @@ export async function POST(req: NextRequest) {
 
     const res = NextResponse.json({
       success: true,
-      user: { username: admin.username, role: admin.role },
+      user: { username: admin.username, role: admin.role || "admin" },
     });
 
     res.cookies.set("admin_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
     });
@@ -74,7 +67,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[POST /api/auth/login]", err);
     return NextResponse.json(
-      { success: false, error: "Login failed." },
+      { success: false, error: "Login failed. Please try again." },
       { status: 500 }
     );
   }
